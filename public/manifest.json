@@ -1,0 +1,22 @@
+{
+  "name": "VoidCheck",
+  "short_name": "VoidCheck",
+  "description": "Visual task management PWA with a space theme",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#13111C",
+  "theme_color": "#13111C",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
