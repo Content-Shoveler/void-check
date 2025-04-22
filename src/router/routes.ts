@@ -14,12 +14,11 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/task/:id',
-    name: 'task-detail',
-    component: () => import('@/views/TaskDetailView.vue'),
-    props: true,
+    path: '/tasks',
+    name: 'tasks',
+    component: () => import('@/views/TasksView.vue'),
     meta: {
-      title: 'Task Details',
+      title: 'All Tasks',
       requiresOnline: false
     }
   },

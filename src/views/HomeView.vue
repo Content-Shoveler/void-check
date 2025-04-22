@@ -1,7 +1,6 @@
 <template>
   <div class="home-view">
     <div class="home-header">
-      <h1>Task Visualization</h1>
       <div class="time-scale-controls">
         <v-button size="small" variant="ghost" @click="timeScaleStore.zoomIn" :disabled="isMinScale">
           <span class="icon">-</span> Zoom In
@@ -46,7 +45,7 @@
             class="task-circle" 
             :class="{ 'task-circle--completed': task.completed }"
             :style="taskStyle(task)"
-            @click="navigateToTask(task.id)"
+            @click="openTaskModal(task.id)"
           >
             <div class="task-circle__content">
               <div class="task-circle__title">{{ task.title }}</div>
@@ -61,51 +60,39 @@
       <div class="task-controls">
         <v-button 
           variant="primary" 
-          @click="showAddTaskForm = true"
+          @click="openNewTaskModal"
         >
           Add Task
         </v-button>
       </div>
     </div>
     
-    <!-- Add Task Dialog (placeholder) -->
-    <div v-if="showAddTaskForm" class="task-form-overlay">
-      <div class="task-form-container">
-        <h2>Add New Task</h2>
-        <p>Task form will be implemented here</p>
-        <div class="form-actions">
-          <v-button 
-            variant="ghost" 
-            @click="showAddTaskForm = false"
-          >
-            Cancel
-          </v-button>
-          <v-button 
-            variant="primary" 
-            @click="addTask"
-          >
-            Add Task
-          </v-button>
-        </div>
-      </div>
-    </div>
+    <!-- Task Modal -->
+    <task-modal
+      v-if="isModalOpen"
+      :task-id="activeTaskId"
+      @close="closeModal"
+      @update="onTaskUpdate"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTaskStore } from '@/store/task';
 import { useTimeScaleStore } from '@/store/timeScale';
 import { getTaskSize, isTaskOverdue, getRemainingTime } from '@/data/models/Task';
 import { getTimeMarkers, calculateTimePosition } from '@/data/models/TimeScale';
 import VButton from '@/components/ui/base/VButton.vue';
+import TaskModal from '@/components/tasks/TaskModal.vue';
 
 export default defineComponent({
   name: 'HomeView',
   
   components: {
-    VButton
+    VButton,
+    TaskModal
   },
   
   setup() {
@@ -113,8 +100,9 @@ export default defineComponent({
     const taskStore = useTaskStore();
     const timeScaleStore = useTimeScaleStore();
     
-    const showAddTaskForm = ref(false);
     const showTaskDetails = ref(true);
+    const isModalOpen = ref(false);
+    const activeTaskId = ref<string | null>(null);
     let refreshInterval: number | null = null;
     
     // Load tasks when component mounts
@@ -219,30 +207,37 @@ export default defineComponent({
       );
     };
     
-    // Navigation to task detail
-    const navigateToTask = (taskId: string) => {
-      router.push(`/task/${taskId}`);
+    // Open task modal with existing task
+    const openTaskModal = (taskId: string) => {
+      activeTaskId.value = taskId;
+      isModalOpen.value = true;
     };
     
-    // Add task (placeholder)
-    const addTask = async () => {
-      const newTask = {
-        title: 'New Task',
-        description: 'Description here',
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-        priority: 2, // Medium
-        tags: ['work']
-      };
-      
-      await taskStore.addTask(newTask);
-      showAddTaskForm.value = false;
+    // Open task modal for new task
+    const openNewTaskModal = () => {
+      activeTaskId.value = null;
+      isModalOpen.value = true;
+    };
+    
+    // Close modal
+    const closeModal = () => {
+      isModalOpen.value = false;
+      setTimeout(() => {
+        activeTaskId.value = null;
+      }, 200); // Delay to allow animation
+    };
+    
+    // Handle task update
+    const onTaskUpdate = () => {
+      // Task is already updated in the store
     };
     
     return {
       taskStore,
       timeScaleStore,
-      showAddTaskForm,
       showTaskDetails,
+      isModalOpen,
+      activeTaskId,
       visibleTasks,
       timeMarkers,
       currentScale,
@@ -250,8 +245,10 @@ export default defineComponent({
       isMaxScale,
       taskStyle,
       formatDate,
-      navigateToTask,
-      addTask
+      openTaskModal,
+      openNewTaskModal,
+      closeModal,
+      onTaskUpdate
     };
   }
 });
@@ -264,7 +261,7 @@ export default defineComponent({
   
   .home-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     margin-bottom: 2rem;
     
@@ -459,38 +456,6 @@ export default defineComponent({
       display: flex;
       justify-content: center;
       gap: 1rem;
-    }
-  }
-  
-  .task-form-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    
-    .task-form-container {
-      background-color: var(--color-surface);
-      border-radius: var(--radius-lg);
-      padding: 2rem;
-      width: 90%;
-      max-width: 500px;
-      
-      h2 {
-        margin-bottom: 1.5rem;
-      }
-      
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 1rem;
-        margin-top: 2rem;
-      }
     }
   }
 }

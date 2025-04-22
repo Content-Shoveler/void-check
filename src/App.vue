@@ -13,6 +13,7 @@
         </div>
         <div class="app-navigation">
           <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/tasks" class="nav-link">Tasks</router-link>
           <router-link to="/settings" class="nav-link">Settings</router-link>
         </div>
       </header>
