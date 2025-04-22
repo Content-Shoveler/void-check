@@ -63,9 +63,9 @@ export default defineComponent({
       default: false
     },
     type: {
-      type: String,
+      type: String as () => 'button' | 'submit' | 'reset',
       default: 'button',
-      validator: (value: string) => ['button', 'submit', 'reset'].includes(value)
+      validator: (value: 'button' | 'submit' | 'reset') => ['button', 'submit', 'reset'].includes(value)
     }
   },
   

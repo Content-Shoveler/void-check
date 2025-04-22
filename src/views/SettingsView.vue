@@ -121,7 +121,7 @@
             <select 
               class="language-select"
               :value="settingsStore.language"
-              @change="e => settingsStore.setLanguage(e.target.value)"
+              @change="handleLanguageChange"
             >
               <option value="en">English</option>
               <option value="es">Español</option>
@@ -145,7 +145,7 @@
             <select 
               class="scale-select"
               :value="timeScaleStore.currentScale.id"
-              @change="e => timeScaleStore.setTimeScale(e.target.value)"
+              @change="handleTimeScaleChange"
             >
               <option 
                 v-for="scale in timeScaleStore.availableScales" 
@@ -174,7 +174,7 @@
 
 <script lang="ts">
 import { defineComponent, computed } from 'vue';
-import { useSettingsStore, Theme, Language } from '@/store/settings';
+import { useSettingsStore, Theme } from '@/store/settings';
 import { useTimeScaleStore } from '@/store/timeScale';
 
 export default defineComponent({
@@ -192,12 +192,26 @@ export default defineComponent({
       settingsStore.setTheme(theme);
     };
     
+    // Handle language change
+    const handleLanguageChange = (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      settingsStore.setLanguage(target.value);
+    };
+    
+    // Handle time scale change
+    const handleTimeScaleChange = (e: Event) => {
+      const target = e.target as HTMLSelectElement;
+      timeScaleStore.setTimeScale(target.value);
+    };
+    
     return {
       settingsStore,
       timeScaleStore,
       isDarkMode,
       setTheme,
-      Theme
+      Theme,
+      handleLanguageChange,
+      handleTimeScaleChange
     };
   }
 });
