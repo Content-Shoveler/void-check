@@ -4,6 +4,8 @@ import router from './router'
 import pinia from './store'
 import { useTasksStore } from './store/modules/tasks'
 import { registerSW } from 'virtual:pwa-register'
+import { loadSampleTasks } from './utils/sampleTasks'
+import taskRepository from './services/taskRepository'
 
 // Initialize service worker for PWA
 const updateSW = registerSW({
@@ -30,3 +32,14 @@ app.mount('#app')
 // Initialize task store after app is mounted
 const tasksStore = useTasksStore()
 tasksStore.initializeTasks()
+
+// Load sample tasks if database is empty
+setTimeout(async () => {
+  const taskCount = await taskRepository.getAll().then(tasks => tasks.length)
+  if (taskCount === 0) {
+    console.log('No tasks found, loading sample data...')
+    await loadSampleTasks(taskRepository)
+    // Refresh the tasks in the store
+    await tasksStore.fetchAllTasks()
+  }
+}, 1000) // Wait for DB initialization

@@ -1,13 +1,27 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Task } from '../../types'
-import { v4 as uuidv4 } from 'uuid'
+import db from '../../services/database'
+import taskRepository from '../../services/taskRepository'
 
+/**
+ * Tasks Store - Manages the application's tasks state
+ * 
+ * Uses IndexedDB for persistence via the taskRepository service
+ */
 export const useTasksStore = defineStore('tasks', () => {
   // State
   const tasks = ref<Task[]>([])
+  const isLoading = ref(false)
   const isInitialized = ref(false)
-  
+  const error = ref<string | null>(null)
+  const activeFilter = ref<string | null>(null)
+  const activeSort = ref<{field: string, direction: 'asc' | 'desc'}>({
+    field: 'dueDate',
+    direction: 'asc'
+  })
+  const searchQuery = ref('')
+
   // Getters
   const allTasks = computed(() => tasks.value)
   
@@ -25,204 +39,373 @@ export const useTasksStore = defineStore('tasks', () => {
       !task.completed && new Date(task.dueDate) < now
     )
   })
+
+  const tasksDueToday = computed(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    return tasks.value.filter(task => {
+      const dueDate = new Date(task.dueDate)
+      return !task.completed && dueDate >= today && dueDate < tomorrow
+    })
+  })
+
+  const tasksDueThisWeek = computed(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfWeek = new Date(today)
+    endOfWeek.setDate(today.getDate() + (7 - today.getDay()))
+    
+    return tasks.value.filter(task => {
+      const dueDate = new Date(task.dueDate)
+      return !task.completed && dueDate >= today && dueDate <= endOfWeek
+    })
+  })
   
   const getTaskById = computed(() => 
     (id: string) => tasks.value.find(task => task.id === id)
   )
+
+  const filteredTasks = computed(() => {
+    let result = [...tasks.value]
+    
+    // Apply search filter
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase()
+      result = result.filter(task => 
+        task.title.toLowerCase().includes(query) || 
+        task.description.toLowerCase().includes(query)
+      )
+    }
+    
+    // Apply active filter if set
+    if (activeFilter.value) {
+      switch (activeFilter.value) {
+        case 'active':
+          result = result.filter(task => !task.completed)
+          break
+        case 'completed':
+          result = result.filter(task => task.completed)
+          break
+        case 'overdue':
+          const now = new Date()
+          result = result.filter(task => !task.completed && new Date(task.dueDate) < now)
+          break
+        case 'today':
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const tomorrow = new Date(today)
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          result = result.filter(task => {
+            const dueDate = new Date(task.dueDate)
+            return !task.completed && dueDate >= today && dueDate < tomorrow
+          })
+          break
+        // Add more filters as needed
+      }
+    }
+    
+    // Apply sorting
+    if (activeSort.value) {
+      result.sort((a, b) => {
+        let aValue: any = null
+        let bValue: any = null
+        
+        switch (activeSort.value.field) {
+          case 'dueDate':
+            aValue = new Date(a.dueDate).getTime()
+            bValue = new Date(b.dueDate).getTime()
+            break
+          case 'priority':
+            const priorityOrder: Record<string, number> = { 'low': 0, 'medium': 1, 'high': 2, 'critical': 3 }
+            aValue = priorityOrder[a.priority] ?? 0
+            bValue = priorityOrder[b.priority] ?? 0
+            break
+          case 'title':
+            aValue = a.title.toLowerCase()
+            bValue = b.title.toLowerCase()
+            break
+          case 'createdAt':
+            aValue = new Date(a.createdAt).getTime()
+            bValue = new Date(b.createdAt).getTime()
+            break
+          default:
+            const field = activeSort.value.field as keyof Task
+            aValue = a[field]
+            bValue = b[field]
+        }
+        
+        // Handle null or undefined values
+        if (aValue === null || aValue === undefined) aValue = 0
+        if (bValue === null || bValue === undefined) bValue = 0
+        
+        if (activeSort.value.direction === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+        }
+      })
+    }
+    
+    return result
+  })
+
+  const tasksByTag = computed(() => {
+    const result: Record<string, Task[]> = {}
+    
+    // Create a map of tag -> tasks
+    tasks.value.forEach(task => {
+      task.tags.forEach(tag => {
+        if (!result[tag]) {
+          result[tag] = []
+        }
+        result[tag].push(task)
+      })
+    })
+    
+    return result
+  })
+
+  const availableTags = computed(() => {
+    const tags = new Set<string>()
+    
+    tasks.value.forEach(task => {
+      task.tags.forEach(tag => tags.add(tag))
+    })
+    
+    return Array.from(tags).sort()
+  })
   
   // Actions
-  function addTask(taskData: Partial<Task>): Task {
-    const now = new Date()
+  async function fetchAllTasks() {
+    isLoading.value = true
+    error.value = null
     
-    const newTask: Task = {
-      id: uuidv4(),
-      title: taskData.title || 'New Task',
-      description: taskData.description || '',
-      dueDate: taskData.dueDate || new Date(now.getTime() + 24 * 60 * 60 * 1000), // Default: tomorrow
-      createdAt: now,
-      updatedAt: now,
-      completedAt: null,
-      completed: false,
-      priority: taskData.priority || 'medium',
-      tags: taskData.tags || [],
-      color: taskData.color || '#00F5FF', // Default: cyan
-      effectType: taskData.effectType || 'glow',
-      isRecurring: taskData.isRecurring || false,
-      recurringPattern: taskData.recurringPattern,
-      notifications: taskData.notifications || {
-        enabled: true,
-        reminderTime: 30  // Default: 30 minutes before
-      },
-      subtasks: taskData.subtasks || [],
-      notes: taskData.notes || '',
-      links: taskData.links || [],
-      history: [
-        {
-          timestamp: now,
-          action: 'created'
+    try {
+      const fetchedTasks = await taskRepository.getAll()
+      tasks.value = fetchedTasks
+      isInitialized.value = true
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err)
+      error.value = 'Failed to load tasks. Please try again.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  async function addTask(taskData: Partial<Task>): Promise<Task | null> {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const newTask = await taskRepository.create(taskData)
+      tasks.value.push(newTask)
+      return newTask
+    } catch (err) {
+      console.error('Failed to add task:', err)
+      error.value = 'Failed to add task. Please try again.'
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const updatedTask = await taskRepository.update(id, updates)
+      
+      if (updatedTask) {
+        const index = tasks.value.findIndex(task => task.id === id)
+        if (index !== -1) {
+          tasks.value[index] = updatedTask
         }
-      ]
+      }
+      
+      return updatedTask
+    } catch (err) {
+      console.error('Failed to update task:', err)
+      error.value = 'Failed to update task. Please try again.'
+      return null
+    } finally {
+      isLoading.value = false
     }
-    
-    tasks.value.push(newTask)
-    saveTasks()
-    
-    return newTask
   }
   
-  function updateTask(id: string, updates: Partial<Task>): Task | null {
-    const taskIndex = tasks.value.findIndex(task => task.id === id)
+  async function deleteTask(id: string): Promise<boolean> {
+    isLoading.value = true
+    error.value = null
     
-    if (taskIndex === -1) return null
-    
-    const task = tasks.value[taskIndex]
-    const now = new Date()
-    
-    // Create history record
-    const historyEntry = {
-      timestamp: now,
-      action: 'updated',
-      previousState: { ...task }
+    try {
+      const success = await taskRepository.delete(id)
+      
+      if (success) {
+        tasks.value = tasks.value.filter(task => task.id !== id)
+      }
+      
+      return success
+    } catch (err) {
+      console.error('Failed to delete task:', err)
+      error.value = 'Failed to delete task. Please try again.'
+      return false
+    } finally {
+      isLoading.value = false
     }
-    
-    // Update the task
-    const updatedTask = {
-      ...task,
-      ...updates,
-      updatedAt: now,
-      history: [...task.history, historyEntry]
-    }
-    
-    // If marking as complete, set completedAt
-    if (updates.completed && !task.completed) {
-      updatedTask.completedAt = now
-    }
-    // If marking as incomplete, clear completedAt
-    else if (updates.completed === false && task.completed) {
-      updatedTask.completedAt = null
-    }
-    
-    tasks.value[taskIndex] = updatedTask
-    saveTasks()
-    
-    return updatedTask
   }
   
-  function deleteTask(id: string): boolean {
-    const taskIndex = tasks.value.findIndex(task => task.id === id)
-    
-    if (taskIndex === -1) return false
-    
-    tasks.value.splice(taskIndex, 1)
-    saveTasks()
-    
-    return true
+  async function toggleTaskCompletion(id: string): Promise<Task | null> {
+    try {
+      const updatedTask = await taskRepository.toggleCompletion(id)
+      
+      if (updatedTask) {
+        const index = tasks.value.findIndex(task => task.id === id)
+        if (index !== -1) {
+          tasks.value[index] = updatedTask
+        }
+      }
+      
+      return updatedTask
+    } catch (err) {
+      console.error('Failed to toggle task completion:', err)
+      error.value = 'Failed to update task. Please try again.'
+      return null
+    }
   }
   
-  function toggleTaskCompletion(id: string): Task | null {
-    const task = tasks.value.find(task => task.id === id)
+  async function addSubtask(taskId: string, title: string): Promise<Task | null> {
+    try {
+      const updatedTask = await taskRepository.addSubtask(taskId, title)
+      
+      if (updatedTask) {
+        const index = tasks.value.findIndex(task => task.id === taskId)
+        if (index !== -1) {
+          tasks.value[index] = updatedTask
+        }
+      }
+      
+      return updatedTask
+    } catch (err) {
+      console.error('Failed to add subtask:', err)
+      error.value = 'Failed to add subtask. Please try again.'
+      return null
+    }
+  }
+  
+  async function toggleSubtaskCompletion(taskId: string, subtaskId: string): Promise<Task | null> {
+    try {
+      const updatedTask = await taskRepository.toggleSubtaskCompletion(taskId, subtaskId)
+      
+      if (updatedTask) {
+        const index = tasks.value.findIndex(task => task.id === taskId)
+        if (index !== -1) {
+          tasks.value[index] = updatedTask
+        }
+      }
+      
+      return updatedTask
+    } catch (err) {
+      console.error('Failed to toggle subtask completion:', err)
+      error.value = 'Failed to update subtask. Please try again.'
+      return null
+    }
+  }
+  
+  async function clearCompletedTasks(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      await taskRepository.clearCompletedTasks()
+      tasks.value = tasks.value.filter(task => !task.completed)
+    } catch (err) {
+      console.error('Failed to clear completed tasks:', err)
+      error.value = 'Failed to clear completed tasks. Please try again.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function setActiveFilter(filter: string | null): void {
+    activeFilter.value = filter
+  }
+
+  function setActiveSort(field: string, direction: 'asc' | 'desc'): void {
+    activeSort.value = { field, direction }
+  }
+
+  function setSearchQuery(query: string): void {
+    searchQuery.value = query
+  }
+
+  async function addTag(taskId: string, tag: string): Promise<Task | null> {
+    const task = tasks.value.find(t => t.id === taskId)
     
     if (!task) return null
     
-    return updateTask(id, { completed: !task.completed })
+    // Don't add duplicate tags
+    if (task.tags.includes(tag)) return task
+    
+    const tags = [...task.tags, tag]
+    return await updateTask(taskId, { tags })
   }
-  
-  function addSubtask(taskId: string, title: string): Task | null {
-    const task = tasks.value.find(task => task.id === taskId)
+
+  async function removeTag(taskId: string, tag: string): Promise<Task | null> {
+    const task = tasks.value.find(t => t.id === taskId)
     
     if (!task) return null
     
-    const subtasks = [...task.subtasks, {
-      id: uuidv4(),
-      title,
-      completed: false
-    }]
-    
-    return updateTask(taskId, { subtasks })
-  }
-  
-  function toggleSubtaskCompletion(taskId: string, subtaskId: string): Task | null {
-    const task = tasks.value.find(task => task.id === taskId)
-    
-    if (!task) return null
-    
-    const subtaskIndex = task.subtasks.findIndex(subtask => subtask.id === subtaskId)
-    
-    if (subtaskIndex === -1) return null
-    
-    const subtasks = [...task.subtasks]
-    subtasks[subtaskIndex] = {
-      ...subtasks[subtaskIndex],
-      completed: !subtasks[subtaskIndex].completed
-    }
-    
-    return updateTask(taskId, { subtasks })
-  }
-  
-  function clearCompletedTasks(): void {
-    tasks.value = tasks.value.filter(task => !task.completed)
-    saveTasks()
+    const tags = task.tags.filter(t => t !== tag)
+    return await updateTask(taskId, { tags })
   }
   
   // Helper functions for persistence
-  function initializeTasks(): void {
+  async function initializeTasks(): Promise<void> {
     if (isInitialized.value) return
     
-    loadTasks()
-    isInitialized.value = true
-  }
-  
-  function loadTasks(): void {
     try {
-      const savedTasks = localStorage.getItem('cybertodo_tasks')
+      isLoading.value = true
       
-      if (savedTasks) {
-        const parsedTasks = JSON.parse(savedTasks)
-        
-        // Convert date strings to Date objects
-        tasks.value = parsedTasks.map((task: any) => ({
-          ...task,
-          dueDate: new Date(task.dueDate),
-          createdAt: new Date(task.createdAt),
-          updatedAt: new Date(task.updatedAt),
-          completedAt: task.completedAt ? new Date(task.completedAt) : null,
-          history: task.history.map((entry: any) => ({
-            ...entry,
-            timestamp: new Date(entry.timestamp)
-          })),
-          recurringPattern: task.recurringPattern ? {
-            ...task.recurringPattern,
-            endDate: task.recurringPattern.endDate ? new Date(task.recurringPattern.endDate) : undefined
-          } : undefined
-        }))
-      }
+      // Initialize the database
+      await db.initialize()
+      
+      // Fetch all tasks
+      await fetchAllTasks()
+      
     } catch (error) {
-      console.error('Failed to load tasks:', error)
-      tasks.value = []
-    }
-  }
-  
-  function saveTasks(): void {
-    try {
-      localStorage.setItem('cybertodo_tasks', JSON.stringify(tasks.value))
-    } catch (error) {
-      console.error('Failed to save tasks:', error)
+      console.error('Failed to initialize tasks:', error)
+    } finally {
+      isLoading.value = false
     }
   }
   
   return {
     // State
     tasks,
+    isLoading,
     isInitialized,
+    error,
+    activeFilter,
+    activeSort,
+    searchQuery,
     
     // Getters
     allTasks,
     activeTasks,
     completedTasks,
     overdueTasks,
+    tasksDueToday,
+    tasksDueThisWeek,
     getTaskById,
+    filteredTasks,
+    tasksByTag,
+    availableTags,
     
     // Actions
+    fetchAllTasks,
     addTask,
     updateTask,
     deleteTask,
@@ -230,6 +413,11 @@ export const useTasksStore = defineStore('tasks', () => {
     addSubtask,
     toggleSubtaskCompletion,
     clearCompletedTasks,
-    initializeTasks
+    initializeTasks,
+    setActiveFilter,
+    setActiveSort,
+    setSearchQuery,
+    addTag,
+    removeTag
   }
 })
