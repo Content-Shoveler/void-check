@@ -382,6 +382,65 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
   
+  // Data import/export functions
+  async function importTasks(importedTasks: Task[]): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      // First, clear the database to avoid duplicates
+      await clearAllTasks(false) // Don't update state yet
+      
+      // Process tasks to ensure they have valid Date objects
+      const processedTasks = importedTasks.map(task => {
+        return {
+          ...task,
+          dueDate: new Date(task.dueDate),
+          createdAt: new Date(task.createdAt),
+          updatedAt: new Date(task.updatedAt),
+          completedAt: task.completedAt ? new Date(task.completedAt) : null
+        }
+      })
+      
+      // Add all tasks to the database
+      const addedTasks: Task[] = []
+      for (const task of processedTasks) {
+        const newTask = await taskRepository.create(task)
+        if (newTask) {
+          addedTasks.push(newTask)
+        }
+      }
+      
+      // Update the state
+      tasks.value = addedTasks
+    } catch (err) {
+      console.error('Failed to import tasks:', err)
+      error.value = 'Failed to import tasks. Please try again.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  async function clearAllTasks(updateState = true): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      // Clear all tasks from the database
+      await db.tasks.clear()
+      
+      // Update the state if requested
+      if (updateState) {
+        tasks.value = []
+      }
+    } catch (err) {
+      console.error('Failed to clear all tasks:', err)
+      error.value = 'Failed to clear all tasks. Please try again.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     tasks,
@@ -418,6 +477,10 @@ export const useTasksStore = defineStore('tasks', () => {
     setActiveSort,
     setSearchQuery,
     addTag,
-    removeTag
+    removeTag,
+    
+    // Import/Export
+    importTasks,
+    clearAllTasks
   }
 })

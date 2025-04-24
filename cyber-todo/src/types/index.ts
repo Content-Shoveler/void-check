@@ -46,10 +46,30 @@ export interface Task {
 /**
  * User settings model
  */
+import type { 
+  ThemeMode, 
+  InterfaceDensity, 
+  WebGLQuality, 
+  TaskPriority 
+} from './components';
+
 export interface UserSettings {
-  theme: 'dark' | 'light' | 'system';
+  theme: ThemeMode;
   defaultTimeScale: number;
   interfaceScale: number;
+  
+  // New fields for UI customization
+  accentColor?: string;
+  interfaceDensity?: InterfaceDensity;
+  fontSize?: number;
+  
+  // Performance settings
+  performanceMode?: boolean;
+  webglQuality?: WebGLQuality;
+  particleDensity?: number;
+  animationIntensity?: number;
+  
+  // Original nested fields
   visualEffects: {
     particleDensity: number;
     animationIntensity: number;
@@ -68,7 +88,7 @@ export interface UserSettings {
   taskDefaults: {
     color: string;
     effectType: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: TaskPriority;
   };
 }
 

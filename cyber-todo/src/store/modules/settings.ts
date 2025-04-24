@@ -7,6 +7,19 @@ const defaultSettings: UserSettings = {
   theme: 'dark', // Default to dark theme
   defaultTimeScale: 86400000, // 1 day in milliseconds
   interfaceScale: 1, // Default scale factor
+  
+  // New UI customization fields
+  accentColor: 'cyan',
+  interfaceDensity: 'normal',
+  fontSize: 1,
+  
+  // Performance settings
+  performanceMode: false,
+  webglQuality: 'medium',
+  particleDensity: 50,
+  animationIntensity: 50,
+  
+  // Original nested fields
   visualEffects: {
     particleDensity: 0.7, // 70% particle density
     animationIntensity: 0.8, // 80% animation intensity
@@ -125,6 +138,28 @@ export const useSettingsStore = defineStore('settings', () => {
     })
   }
   
+  // Add import/export functions
+  function importSettings(importedSettings: Partial<UserSettings>) {
+    // Merge imported settings with current defaults to ensure schema compatibility
+    settings.value = {
+      ...defaultSettings,
+      ...importedSettings
+    }
+    
+    // Apply settings to DOM
+    applyTheme(settings.value.theme)
+    
+    // If interface density is set, apply it
+    if (settings.value.interfaceDensity) {
+      document.documentElement.setAttribute('data-density', settings.value.interfaceDensity);
+    }
+    
+    // If font size is set, apply it
+    if (settings.value.fontSize) {
+      document.documentElement.style.setProperty('--base-font-size', `${settings.value.fontSize}rem`);
+    }
+  }
+
   return {
     settings,
     isPerformanceMode,
@@ -134,6 +169,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme,
     toggleTheme,
     updateSettings,
-    resetSettings
+    resetSettings,
+    importSettings
   }
 })
