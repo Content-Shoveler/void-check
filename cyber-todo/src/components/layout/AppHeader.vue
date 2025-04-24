@@ -80,6 +80,7 @@ export default defineComponent({
     const navItems: NavItem[] = [
       { path: '/', label: 'Home' },
       { path: '/tasks', label: 'Tasks' },
+      { path: '/tasks/visual', label: 'Visualize' },
       { path: '/settings', label: 'Settings' }
     ];
     
