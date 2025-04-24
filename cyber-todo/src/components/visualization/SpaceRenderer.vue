@@ -349,12 +349,20 @@ export default defineComponent({
   height: 100%;
   position: relative;
   overflow: hidden;
+  flex: 1;
+  display: flex;
   
   &.webgl-error {
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
   }
 }
 

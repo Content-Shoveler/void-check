@@ -190,6 +190,8 @@ export default defineComponent({
 .home-view {
   display: flex;
   flex-direction: column;
+  --header-height: 60px;
+  --footer-height: 60px;
   height: calc(100vh - var(--header-height) - var(--footer-height));
   overflow: hidden;
   
@@ -210,13 +212,16 @@ export default defineComponent({
   flex: 1;
   position: relative;
   min-height: 500px;
+  height: 100%;
+  display: flex;
+  z-index: 1;
 }
 
 .timeline-legend {
   position: absolute;
   top: var(--space-4);
   left: var(--space-4);
-  z-index: 10;
+  z-index: 5;
   max-width: 250px;
   
   .legend-card {
@@ -257,7 +262,7 @@ export default defineComponent({
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  z-index: 10;
+  z-index: 5;
   width: 250px;
   
   .stats-card {
