@@ -194,13 +194,16 @@ export default defineComponent({
 
 @keyframes cyber-badge-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(currentColor, 0.4);
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 0.4;
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(currentColor, 0);
+    box-shadow: 0 0 0 6px currentColor;
+    opacity: 0;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(currentColor, 0);
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 0;
   }
 }
 </style>
