@@ -107,7 +107,7 @@ export default defineComponent({
         controls.minPolarAngle = Math.PI * 0.05; // Closer to top-down
         controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal
         // Add initial auto-rotation for solar system feel
-        controls.autoRotate = true;
+        // controls.autoRotate = true;
         controls.autoRotateSpeed = 0.5;
       }
       
