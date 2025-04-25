@@ -105,6 +105,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import { useTasksStore } from '../store/modules/tasks';
+import { useRoute } from 'vue-router';
 import CyberButton from '../components/cyber/buttons/CyberButton.vue';
 import CyberInput from '../components/cyber/inputs/CyberInput.vue';
 import CyberSelect from '../components/cyber/inputs/CyberSelect.vue';
@@ -123,6 +124,7 @@ export default defineComponent({
   },
   setup() {
     const tasksStore = useTasksStore();
+    const route = useRoute();
     
     // State
     const isTaskModalOpen = ref(false);
@@ -148,6 +150,16 @@ export default defineComponent({
     // Initialize tasks
     onMounted(async () => {
       await tasksStore.initializeTasks();
+      
+      // Check if we have a task ID in the route params and open that task
+      if (route.params.id) {
+        const taskId = route.params.id as string;
+        const task = tasksStore.getTaskById(taskId);
+        if (task) {
+          currentTask.value = task;
+          isTaskModalOpen.value = true;
+        }
+      }
     });
     
     // Watch for changes to search, filter, and sort

@@ -1,5 +1,5 @@
 <template>
-  <CyberModal :open="isOpen" title="Task Details" @close="onCancel">
+  <CyberModal :modelValue="isOpen" title="Task Details" @update:modelValue="onCancel">
     <div class="task-modal">
       <form @submit.prevent="onSave">
         <div class="task-modal__section">
