@@ -1,18 +1,18 @@
 <template>
   <div class="home-view">
-    <header class="home-view__header">
+    <!-- <header class="home-view__header">
       <h1 class="cyber-text-glow">Time Visualization</h1>
       <div class="home-view__actions">
         <CyberButton @click="navigateToTasks">
           Manage Tasks
         </CyberButton>
       </div>
-    </header>
+    </header> -->
     
     <div class="space-container">
       <SpaceVisualization ref="visualizationRef" />
       
-      <div class="timeline-legend">
+      <!-- <div class="timeline-legend">
         <CyberCard class="legend-card">
           <h3 class="legend-title">Timeline</h3>
           <div class="legend-item">
@@ -36,9 +36,9 @@
             <span>Current Time (Center)</span>
           </div>
         </CyberCard>
-      </div>
+      </div> -->
       
-      <div class="stats-panel">
+      <!-- <div class="stats-panel">
         <CyberCard class="stats-card">
           <h3 class="stats-title">Task Stats</h3>
           <div class="stats-grid">
@@ -60,7 +60,7 @@
             </div>
           </div>
         </CyberCard>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
