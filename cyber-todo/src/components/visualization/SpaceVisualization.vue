@@ -34,17 +34,19 @@
       </cyber-card>
     </div>
     
-    <!-- Create task entities for each task -->
-    <task-entity
-      v-for="task in positionedTasks"
-      :key="task.id"
-      :task="task"
-      :scene="scene"
-      :camera="camera"
-      :position="getTaskPosition(task.id)"
-      :selected="selectedTaskId === task.id"
-      @click="handleTaskClick"
-    />
+    <!-- Create task entities for each task (only when scene and camera are ready) -->
+    <template v-if="scene && camera">
+      <task-entity
+        v-for="task in positionedTasks"
+        :key="task.id"
+        :task="task" 
+        :scene="scene"
+        :camera="camera"
+        :position="getTaskPosition(task.id)"
+        :selected="selectedTaskId === task.id"
+        @click="handleTaskClick"
+      />
+    </template>
   </div>
 </template>
 
@@ -155,8 +157,9 @@ export default defineComponent({
     
     // Handle scene ready event
     const handleSceneReady = (data: { scene: THREE.Scene; camera: THREE.Camera }) => {
-      scene.value = data.scene;
-      camera.value = data.camera;
+      // Cast to correct type since we know these are non-null from SpaceRenderer
+      scene.value = data.scene as THREE.Scene;
+      camera.value = data.camera as THREE.Camera;
       
       // Calculate initial positions
       calculateTaskPositions();
@@ -265,7 +268,7 @@ export default defineComponent({
 
 .task-details {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   width: 300px;
   z-index: 10;

@@ -2,6 +2,195 @@
  * TypeScript declarations for Three.js modules
  */
 
+// Allow importing three module with basic types we use
+declare module 'three' {
+  export class Object3D {
+    position: Vector3;
+    rotation: Euler;
+    scale: Vector3;
+    add(object: Object3D): this;
+    remove(object: Object3D): this;
+    traverse(callback: (object: Object3D) => void): void;
+  }
+  
+  export class Scene extends Object3D {
+    background: Color | null;
+  }
+  
+  export class Vector3 {
+    x: number;
+    y: number;
+    z: number;
+    set(x: number, y: number, z: number): this;
+  }
+  
+  export class Euler {
+    x: number;
+    y: number;
+    z: number;
+  }
+  
+  export class Color {
+    constructor(color?: number | string);
+  }
+  
+  export class Camera extends Object3D {
+    aspect: number;
+    updateProjectionMatrix(): void;
+    lookAt(x: number, y: number, z: number): void;
+  }
+  
+  export class PerspectiveCamera extends Camera {
+    constructor(fov: number, aspect: number, near: number, far: number);
+  }
+  
+  export class Material {
+    dispose(): void;
+    transparent: boolean;
+    opacity: number;
+    emissive?: Color;
+    emissiveIntensity?: number;
+  }
+  
+  export class MeshStandardMaterial extends Material {
+    color: Color;
+    emissive: Color;
+    emissiveIntensity: number;
+    metalness: number;
+    roughness: number;
+  }
+  
+  export class MeshBasicMaterial extends Material {
+    constructor(parameters?: { color?: number | string; transparent?: boolean; opacity?: number; side?: Side });
+    color: Color;
+    side: Side;
+  }
+  
+  export class PointsMaterial extends Material {
+    constructor(parameters?: { 
+      size?: number; 
+      color?: number | string; 
+      transparent?: boolean; 
+      opacity?: number; 
+      blending?: Blending;
+      sizeAttenuation?: boolean;
+      vertexColors?: boolean;
+    });
+    size: number;
+    color: Color;
+    blending: Blending;
+    sizeAttenuation: boolean;
+    vertexColors: boolean;
+  }
+  
+  export class ShaderMaterial extends Material {
+    constructor(parameters?: { uniforms?: { [uniform: string]: { value: any } }; vertexShader?: string; fragmentShader?: string; transparent?: boolean });
+    uniforms: { [uniform: string]: { value: any } };
+  }
+  
+  export class BufferGeometry {
+    dispose(): void;
+    setAttribute(name: string, attribute: BufferAttribute): BufferGeometry;
+  }
+  
+  export class BufferAttribute {
+    constructor(array: Float32Array, itemSize: number);
+  }
+  
+  export class Points extends Object3D {
+    geometry: BufferGeometry;
+    material: Material;
+  }
+  
+  export class Mesh extends Object3D {
+    geometry: BufferGeometry;
+    material: Material | Material[];
+    scale: Vector3;
+    rotation: Euler;
+  }
+  
+  export class WebGLRenderer {
+    constructor(parameters?: { antialias?: boolean; alpha?: boolean; powerPreference?: string });
+    setSize(width: number, height: number): void;
+    setPixelRatio(ratio: number): void;
+    render(scene: Scene, camera: Camera): void;
+    dispose(): void;
+    domElement: HTMLCanvasElement;
+  }
+  
+  export class Raycaster {
+    setFromCamera(coords: Vector2, camera: Camera): void;
+    intersectObject(object: Object3D): Array<{ distance: number; point: Vector3; object: Object3D }>;
+  }
+  
+  export class Vector2 {
+    constructor(x?: number, y?: number);
+    x: number;
+    y: number;
+  }
+  
+  export class GridHelper extends Object3D {
+    constructor(size: number, divisions: number, colorCenterLine?: number, colorGrid?: number);
+    position: Vector3;
+    rotation: Euler;
+  }
+  
+  export class RingGeometry extends BufferGeometry {
+    constructor(innerRadius: number, outerRadius: number, thetaSegments?: number, phiSegments?: number, thetaStart?: number, thetaLength?: number);
+  }
+  
+  export class SphereGeometry extends BufferGeometry {
+    constructor(radius?: number, widthSegments?: number, heightSegments?: number);
+  }
+  
+  export class OctahedronGeometry extends BufferGeometry {
+    constructor(radius?: number, detail?: number);
+  }
+  
+  export class DodecahedronGeometry extends BufferGeometry {
+    constructor(radius?: number, detail?: number);
+  }
+  
+  export class TetrahedronGeometry extends BufferGeometry {
+    constructor(radius?: number, detail?: number);
+  }
+  
+  export class IcosahedronGeometry extends BufferGeometry {
+    constructor(radius?: number, detail?: number);
+  }
+  
+  export class AmbientLight extends Object3D {
+    constructor(color?: number | string, intensity?: number);
+  }
+  
+  export class DirectionalLight extends Object3D {
+    constructor(color?: number | string, intensity?: number);
+  }
+  
+  // Three.js constants/enums
+  export const DoubleSide: Side;
+  export const FrontSide: Side;
+  export const BackSide: Side;
+  
+  export const AdditiveBlending: Blending;
+  export const NormalBlending: Blending;
+  export const SubtractiveBlending: Blending;
+  export const MultiplyBlending: Blending;
+  
+  export enum Side {
+    DoubleSide,
+    FrontSide,
+    BackSide
+  }
+  
+  export enum Blending {
+    AdditiveBlending,
+    NormalBlending,
+    SubtractiveBlending,
+    MultiplyBlending
+  }
+}
+
 // Allow importing threejs submodules
 declare module 'three/examples/jsm/controls/OrbitControls' {
   import { Camera, Renderer } from 'three';
@@ -16,5 +205,8 @@ declare module 'three/examples/jsm/controls/OrbitControls' {
     minDistance: number;
     minPolarAngle: number;
     maxPolarAngle: number;
+    // Add solar system orbital view properties
+    autoRotate: boolean;
+    autoRotateSpeed: number;
   }
 }

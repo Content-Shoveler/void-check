@@ -72,15 +72,17 @@ export default defineComponent({
       scene = new THREE.Scene();
       scene.background = sceneBackgroundColor.value;
       
-      // Create camera with proper perspective for space visualization
+      // Create camera with proper perspective for 2D orbital visualization
       camera = new THREE.PerspectiveCamera(
-        60, // FOV
+        50, // Reduced FOV for better orbital view
         containerRef.value ? containerRef.value.clientWidth / containerRef.value.clientHeight : 1,
         0.1, // Near plane
         2000 // Far plane
       );
+      // Position camera more directly above for top-down orbital view
+      camera.position.y = 60;
       camera.position.z = 40;
-      camera.position.y = 10;
+      camera.position.x = 0;
       camera.lookAt(0, 0, 0);
       
       // Initialize renderer with anti-aliasing if performance allows
@@ -93,17 +95,20 @@ export default defineComponent({
       // Set pixel ratio based on performance mode
       renderer.setPixelRatio(getOptimalPixelRatio(settingsStore.isPerformanceMode));
       
-      // Create orbit controls for camera interaction
+      // Create orbit controls optimized for 2D orbital view
       if (camera && containerRef.value) {
         controls = new OrbitControls(camera, containerRef.value);
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
         controls.rotateSpeed = 0.5;
-        controls.maxDistance = 150;
-        controls.minDistance = 20;
-        // Limit vertical rotation to avoid flipping
-        controls.minPolarAngle = Math.PI * 0.1;
-        controls.maxPolarAngle = Math.PI * 0.9;
+        controls.maxDistance = 180;
+        controls.minDistance = 40;
+        // Limit vertical rotation more to encourage top-down view
+        controls.minPolarAngle = Math.PI * 0.05; // Closer to top-down
+        controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal
+        // Add initial auto-rotation for solar system feel
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
       }
       
       // Handle container resize
@@ -139,10 +144,13 @@ export default defineComponent({
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
       
+      // Create orbital plane visualization
+      createOrbitalPlane();
+      
       // Create star field background
       createStarField();
       
-      // Create center marker for current time
+      // Create center marker for current time (the "sun")
       createCenterTimeMarker();
       
       // Emit ready event with scene and camera
@@ -180,18 +188,73 @@ export default defineComponent({
       return true;
     };
     
-    // Create center marker representing current time
+    // Create visualization of orbital rings
+    const createOrbitalPlane = () => {
+      if (!scene) return;
+      
+      // Create subtle grid for XZ plane
+      const gridHelper = new THREE.GridHelper(100, 20, 0x0088ff, 0x002233);
+      gridHelper.rotation.x = Math.PI / 2; // Rotate to XZ plane
+      gridHelper.position.y = -0.5; // Slightly below task positions
+      scene.add(gridHelper);
+      
+      // Create concentric orbital rings
+      const ringGeometry1 = new THREE.RingGeometry(8, 8.5, 64);
+      const ringGeometry2 = new THREE.RingGeometry(15, 15.5, 64);
+      const ringGeometry3 = new THREE.RingGeometry(25, 25.5, 64);
+      const ringGeometry4 = new THREE.RingGeometry(40, 40.5, 64);
+      
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: 0x0066cc,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide
+      });
+      
+      const ring1 = new THREE.Mesh(ringGeometry1, ringMaterial);
+      const ring2 = new THREE.Mesh(ringGeometry2, ringMaterial);
+      const ring3 = new THREE.Mesh(ringGeometry3, ringMaterial);
+      const ring4 = new THREE.Mesh(ringGeometry4, ringMaterial);
+      
+      // Position rings slightly below task plane
+      ring1.position.y = -0.2;
+      ring2.position.y = -0.2;
+      ring3.position.y = -0.2;
+      ring4.position.y = -0.2;
+      
+      // Rotate rings to lay flat on XZ plane
+      ring1.rotation.x = Math.PI / 2;
+      ring2.rotation.x = Math.PI / 2;
+      ring3.rotation.x = Math.PI / 2;
+      ring4.rotation.x = Math.PI / 2;
+      
+      scene.add(ring1);
+      scene.add(ring2);
+      scene.add(ring3);
+      scene.add(ring4);
+      
+      // Add subtle animation to rings
+      animationCallbacks.push((time) => {
+        const speed = 0.0002;
+        ring1.rotation.z = time * speed;
+        ring2.rotation.z = time * speed * 0.8;
+        ring3.rotation.z = time * speed * 0.6;
+        ring4.rotation.z = time * speed * 0.4;
+      });
+    };
+    
+    // Create center marker representing current time ("sun")
     const createCenterTimeMarker = () => {
       if (!scene) return;
       
-      // Create a sphere to represent the current time center point
-      const geometry = new THREE.SphereGeometry(3, 32, 32);
+      // Create a larger, sun-like sphere to represent the current time center point
+      const geometry = new THREE.SphereGeometry(4, 32, 32);
       
-      // Create custom shader material with gradient matching the legend
+      // Create custom shader material with sun-like gradient and glow
       const material = new THREE.ShaderMaterial({
         uniforms: {
-          colorA: { value: new THREE.Color(0x0078FF) }, // Primary color 
-          colorB: { value: new THREE.Color(0x00BFFF) }, // Secondary color
+          colorA: { value: new THREE.Color(0xFFAA00) }, // Warm sun-like center color
+          colorB: { value: new THREE.Color(0xFF5500) }, // Outer sun color
           time: { value: 0.0 }
         },
         vertexShader: `
@@ -239,14 +302,14 @@ export default defineComponent({
         }
       });
       
-      // Create glowing particles around the center for additional visibility
-      const particleCount = 50;
+      // Create corona effect with particles around the sun
+      const particleCount = 80;
       const particlesGeometry = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
       
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        const radius = 4 + Math.random() * 3;
+        const radius = 4.5 + Math.random() * 3;
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
         
@@ -258,8 +321,8 @@ export default defineComponent({
       particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
       
       const particlesMaterial = new THREE.PointsMaterial({
-        size: 0.5,
-        color: 0x00A5FF,
+        size: 0.8,
+        color: 0xFFAA00,
         transparent: true,
         opacity: 0.8,
         blending: THREE.AdditiveBlending

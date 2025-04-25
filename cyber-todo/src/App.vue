@@ -25,11 +25,11 @@
     </main>
     
     <!-- App Footer -->
-    <footer class="app-footer">
+    <!-- <footer class="app-footer">
       <div class="container">
         <p>&copy; {{ currentYear }} Cyberpunk Space Todo</p>
       </div>
-    </footer>
+    </footer> -->
   </div>
 </template>
 

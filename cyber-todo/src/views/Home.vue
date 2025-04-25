@@ -62,25 +62,6 @@
         </CyberCard>
       </div>
     </div>
-    
-    <div class="time-controls">
-      <div class="scale-control">
-        <CyberSlider
-          v-model="timeScale"
-          :min="0.1"
-          :max="10"
-          :step="0.1"
-          label="Time Scale"
-        />
-        <div class="scale-labels">
-          <span>Hours</span>
-          <span>Days</span>
-          <span>Weeks</span>
-          <span>Months</span>
-          <span>Year</span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 

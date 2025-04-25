@@ -62,37 +62,41 @@ export default defineComponent({
       return priorityColors[props.task.priority] || priorityColors['medium'];
     });
     
-    // Create task mesh based on priority
+    // Create task mesh based on priority (planetary style)
     const createTaskMesh = () => {
       if (!props.scene) return;
       
-      // Create geometry based on task priority
+      // Create geometry based on task priority - using more planet-like shapes
       let geometry: THREE.BufferGeometry;
       
       switch (props.task.priority) {
         case 'low':
-          geometry = new THREE.OctahedronGeometry(1, 0);
+          // Smaller, simpler planet for low priority
+          geometry = new THREE.SphereGeometry(1.2, 16, 16);
           break;
         case 'medium':
-          geometry = new THREE.DodecahedronGeometry(1.2, 0);
+          // Medium planet with slight irregularity
+          geometry = new THREE.DodecahedronGeometry(1.4, 0);
           break;
         case 'high':
-          geometry = new THREE.TetrahedronGeometry(1.8, 0);
+          // Larger angular planet for high priority
+          geometry = new THREE.IcosahedronGeometry(1.8, 0);
           break;
         case 'critical':
-          geometry = new THREE.IcosahedronGeometry(1.6, 0);
+          // Dramatic shape for critical tasks
+          geometry = new THREE.TetrahedronGeometry(2.0, 0);
           break;
         default:
-          geometry = new THREE.SphereGeometry(1, 16, 16);
+          geometry = new THREE.SphereGeometry(1.4, 16, 16);
       }
       
-      // Create material with glow effect based on priority
+      // Create material with planet-like appearance based on priority
       const material = new THREE.MeshStandardMaterial({
         color: getTaskColor.value,
         emissive: getTaskColor.value,
-        emissiveIntensity: props.task.completed ? 0.2 : 0.5,
-        metalness: 0.8,
-        roughness: 0.2,
+        emissiveIntensity: props.task.completed ? 0.2 : 0.4,
+        metalness: 0.6,
+        roughness: 0.4,
         transparent: true,
         opacity: props.task.completed ? 0.5 : 1
       });
@@ -107,19 +111,39 @@ export default defineComponent({
         props.position.z
       );
       
-      // Add subtle animation to mesh
+      // Add orbital animations to mesh
       const animate = (time: number) => {
         if (!taskMesh) return;
         
-        // Subtle rotation based on task ID for uniqueness
+        // Calculate unique rotation speed based on task ID
         const idHash = props.task.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
         const rotationSpeed = 0.0001 + (idHash % 10) * 0.00002;
         
-        taskMesh.rotation.y += rotationSpeed;
-        taskMesh.rotation.z += rotationSpeed * 0.7;
+        // Planet rotation animation
+        taskMesh.rotation.y += rotationSpeed * 1.2;
+        taskMesh.rotation.z += rotationSpeed * 0.3;
         
-        // Subtle hovering effect
-        taskMesh.position.y = props.position.y + Math.sin(time * 0.001 + idHash) * 0.2;
+        // Add subtle "bobbing" up and down motion for solar system feel
+        // This adds a slight 3D movement while keeping the primary orbit 2D
+        taskMesh.position.y = props.position.y + Math.sin(time * 0.001 + idHash) * 0.15;
+        
+        // Optional: Add slight orbital "wobble" for more dynamic feel
+        if (!props.task.completed) {
+          const wobbleAmount = 0.05;
+          const wobbleSpeed = 0.0005;
+          // Get current orbital position (distance from center)
+          const orbital = {
+            x: props.position.x,
+            z: props.position.z
+          };
+          // Calculate distance from center
+          const distance = Math.sqrt(orbital.x * orbital.x + orbital.z * orbital.z);
+          // Calculate angle
+          const angle = Math.atan2(orbital.z, orbital.x) + (Math.sin(time * wobbleSpeed + idHash) * wobbleAmount);
+          // Apply subtle adjustment to position (wobble in orbit)
+          taskMesh.position.x = Math.cos(angle) * distance;
+          taskMesh.position.z = Math.sin(angle) * distance;
+        }
       };
       
       // Add click event using raycaster
