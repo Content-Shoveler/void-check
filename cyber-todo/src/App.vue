@@ -72,6 +72,12 @@ export default defineComponent({
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+
+  & > div {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
   
   .app-title {
     font-size: var(--text-xl);
