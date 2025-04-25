@@ -35,9 +35,6 @@
             <div class="legend-color legend-center"></div>
             <span>Current Time (Center)</span>
           </div>
-          <div class="legend-info">
-            <CyberBadge type="info">Tasks move closer as due date approaches</CyberBadge>
-          </div>
         </CyberCard>
       </div>
       

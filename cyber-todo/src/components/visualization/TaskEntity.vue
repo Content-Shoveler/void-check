@@ -77,10 +77,10 @@ export default defineComponent({
           geometry = new THREE.DodecahedronGeometry(1.2, 0);
           break;
         case 'high':
-          geometry = new THREE.IcosahedronGeometry(1.4, 0);
+          geometry = new THREE.TetrahedronGeometry(1.8, 0);
           break;
         case 'critical':
-          geometry = new THREE.TorusKnotGeometry(1, 0.4, 64, 8, 2, 3);
+          geometry = new THREE.IcosahedronGeometry(1.6, 0);
           break;
         default:
           geometry = new THREE.SphereGeometry(1, 16, 16);
