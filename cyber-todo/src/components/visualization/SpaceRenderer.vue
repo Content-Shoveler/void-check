@@ -142,6 +142,9 @@ export default defineComponent({
       // Create star field background
       createStarField();
       
+      // Create center marker for current time
+      createCenterTimeMarker();
+      
       // Emit ready event with scene and camera
       emit('scene-ready', { scene, camera, renderer });
       
@@ -175,6 +178,103 @@ export default defineComponent({
       animate(0);
       
       return true;
+    };
+    
+    // Create center marker representing current time
+    const createCenterTimeMarker = () => {
+      if (!scene) return;
+      
+      // Create a sphere to represent the current time center point
+      const geometry = new THREE.SphereGeometry(3, 32, 32);
+      
+      // Create custom shader material with gradient matching the legend
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          colorA: { value: new THREE.Color(0x0078FF) }, // Primary color 
+          colorB: { value: new THREE.Color(0x00BFFF) }, // Secondary color
+          time: { value: 0.0 }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 colorA;
+          uniform vec3 colorB;
+          uniform float time;
+          varying vec2 vUv;
+          
+          void main() {
+            // Create animated gradient effect
+            vec3 color = mix(colorA, colorB, vUv.y + sin(time * 0.001) * 0.2);
+            
+            // Add glow effect 
+            float intensity = 1.0 - 2.0 * length(vUv - 0.5);
+            intensity = pow(intensity, 1.5);
+            
+            gl_FragColor = vec4(color, 0.8 * intensity);
+          }
+        `,
+        transparent: true
+      });
+      
+      // Create mesh and add to scene
+      const centerMarker = new THREE.Mesh(geometry, material);
+      centerMarker.position.set(0, 0, 0);
+      scene.add(centerMarker);
+      
+      // Add pulsing effect animation
+      animationCallbacks.push((time) => {
+        if (centerMarker && material.uniforms) {
+          // Update time uniform for shader animation
+          material.uniforms.time.value = time;
+          
+          // Add subtle size pulsing
+          const pulse = 1.0 + Math.sin(time * 0.002) * 0.1;
+          centerMarker.scale.set(pulse, pulse, pulse);
+        }
+      });
+      
+      // Create glowing particles around the center for additional visibility
+      const particleCount = 50;
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlePositions = new Float32Array(particleCount * 3);
+      
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        const radius = 4 + Math.random() * 3;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        particlePositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        particlePositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        particlePositions[i3 + 2] = radius * Math.cos(phi);
+      }
+      
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.5,
+        color: 0x00A5FF,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending
+      });
+      
+      const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particles);
+      
+      // Add subtle rotation to particles
+      animationCallbacks.push((time) => {
+        if (particles) {
+          particles.rotation.y = time * 0.0003;
+          particles.rotation.x = time * 0.0002;
+        }
+      });
     };
     
     // Create star field as background
