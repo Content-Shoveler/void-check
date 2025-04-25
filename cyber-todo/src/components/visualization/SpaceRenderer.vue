@@ -192,12 +192,6 @@ export default defineComponent({
     const createOrbitalPlane = () => {
       if (!scene) return;
       
-      // Create subtle grid for XZ plane
-      const gridHelper = new THREE.GridHelper(100, 20, 0x0088ff, 0x002233);
-      gridHelper.rotation.x = Math.PI / 2; // Rotate to XZ plane
-      gridHelper.position.y = -0.5; // Slightly below task positions
-      scene.add(gridHelper);
-      
       // Create concentric orbital rings
       const ringGeometry1 = new THREE.RingGeometry(8, 8.5, 64);
       const ringGeometry2 = new THREE.RingGeometry(15, 15.5, 64);
@@ -297,19 +291,19 @@ export default defineComponent({
           material.uniforms.time.value = time;
           
           // Add subtle size pulsing
-          const pulse = 1.0 + Math.sin(time * 0.002) * 0.1;
-          centerMarker.scale.set(pulse, pulse, pulse);
+          // const pulse = 1.0 + Math.sin(time * 0.002) * 0.1;
+          // centerMarker.scale.set(pulse, pulse, pulse);
         }
       });
       
       // Create corona effect with particles around the sun
-      const particleCount = 80;
+      const particleCount = 300;
       const particlesGeometry = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
       
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        const radius = 4.5 + Math.random() * 3;
+        const radius = 4 + Math.random();
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
         
@@ -324,7 +318,7 @@ export default defineComponent({
         size: 0.8,
         color: 0xFFAA00,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.2,
         blending: THREE.AdditiveBlending
       });
       
