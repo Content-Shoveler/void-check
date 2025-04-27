@@ -18,11 +18,12 @@ export interface TaskPosition {
  * 
  * @param task The task to position
  * @param timeScale Scale factor (0-10) controlling how spread out tasks are in time
+ * @param referenceTime Optional reference time to use instead of current time
  * @returns Position in solar system space (primarily using X and Z axes)
  */
-export function calculateTaskPosition(task: Task, timeScale: number): TaskPosition {
+export function calculateTaskPosition(task: Task, timeScale: number, referenceTime?: Date): TaskPosition {
   // Current time as reference point
-  const now = new Date();
+  const now = referenceTime || new Date();
   
   // Calculate time difference in milliseconds
   const dueDate = new Date(task.dueDate);

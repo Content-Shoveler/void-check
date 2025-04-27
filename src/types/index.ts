@@ -63,6 +63,10 @@ export interface UserSettings {
   interfaceDensity?: InterfaceDensity;
   fontSize?: number;
   
+  // Visualization time settings
+  visualizationTimeMode?: 'live' | 'custom';
+  customNowTime?: string;
+  
   // Performance settings
   performanceMode?: boolean;
   webglQuality?: WebGLQuality;

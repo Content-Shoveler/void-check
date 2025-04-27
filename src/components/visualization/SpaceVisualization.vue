@@ -6,6 +6,24 @@
     />
     
     <div class="controls">
+      <div class="time-controls">
+        <div class="now-time-control">
+          <div class="toggle-wrapper" @click="toggleLiveMode">
+            <cyber-toggle
+              :modelValue="isLiveMode"
+              label="Live Mode"
+              @change="handleLiveModeChange"
+            />
+          </div>
+          <input 
+            v-if="!isLiveMode"
+            type="datetime-local"
+            class="time-picker"
+            v-model="customNowTimeInput"
+            @change="updateCustomTime"
+          />
+        </div>
+      </div>
       <cyber-slider
         v-model="timeScale"
         :min="0"
@@ -16,22 +34,22 @@
     </div>
     
     <div v-if="selectedTask" class="task-details">
-      <!-- <cyber-card>
-        <h3>{{ selectedTask.title }}</h3>
-        <p v-if="selectedTask.description">{{ selectedTask.description }}</p>
-        <div class="task-meta">
+      <cyber-card>
+        <!-- <h5>{{ selectedTask.title }}</h5> -->
+        <!-- <p v-if="selectedTask.description">{{ selectedTask.description }}</p> -->
+        <h4 class="due-date">{{ formatDate(selectedTask.dueDate) }}</h4>
+        <!-- <div class="task-meta">
           <cyber-badge :type="selectedTask.priority">{{ selectedTask.priority }}</cyber-badge>
-          <span class="due-date">Due: {{ formatDate(selectedTask.dueDate) }}</span>
-        </div>
-        <div class="task-actions">
+        </div> -->
+        <!-- <div class="task-actions">
           <cyber-button size="small" @click="openTaskDetails(selectedTask.id)">
             View Details
           </cyber-button>
           <cyber-button size="small" type="secondary" @click="toggleTaskCompletion(selectedTask)" :disabled="selectedTask.completed">
             {{ selectedTask.completed ? 'Completed' : 'Mark Complete' }}
           </cyber-button>
-        </div>
-      </cyber-card> -->
+        </div> -->
+      </cyber-card>
     </div>
     
     <!-- Create task entities for each task (only when scene and camera are ready) -->
@@ -52,7 +70,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, watch } from 'vue';
+import { defineComponent, ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import * as THREE from 'three';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '../../store/modules/tasks';
@@ -66,6 +84,7 @@ import CyberSlider from '../cyber/inputs/CyberSlider.vue';
 import CyberButton from '../cyber/buttons/CyberButton.vue';
 import CyberCard from '../cyber/cards/CyberCard.vue';
 import CyberBadge from '../cyber/cards/CyberBadge.vue';
+import CyberToggle from '../cyber/inputs/CyberToggle.vue';
 
 export default defineComponent({
   name: 'SpaceVisualization',
@@ -76,7 +95,8 @@ export default defineComponent({
     CyberSlider,
     CyberButton,
     CyberCard,
-    CyberBadge
+    CyberBadge,
+    CyberToggle
   },
   
   setup() {
@@ -91,6 +111,39 @@ export default defineComponent({
     
     // Time scale control (0-10)
     const timeScale = ref(settingsStore.settings.defaultTimeScale || 5);
+    
+    // Now time control - initialize from settings
+    const isLiveMode = ref(settingsStore.settings.visualizationTimeMode === 'live');
+    const customNowTime = ref(
+      settingsStore.settings.customNowTime 
+        ? new Date(settingsStore.settings.customNowTime) 
+        : new Date()
+    );
+    const customNowTimeInput = ref(formatDateForInput(customNowTime.value));
+    
+    // Format date for datetime-local input
+    function formatDateForInput(date: Date): string {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    // Update custom time when input changes
+    const updateCustomTime = () => {
+      customNowTime.value = new Date(customNowTimeInput.value);
+      // Save to settings
+      settingsStore.updateSettings({
+        customNowTime: customNowTime.value.toISOString()
+      });
+      calculateTaskPositions();
+    };
+    
+    // Timer for live mode updates
+    let liveUpdateTimer: number | null = null;
     
     // Selected task
     const selectedTaskId = ref<string | null>(null);
@@ -135,11 +188,14 @@ export default defineComponent({
       
       const positions = new Map<string, TaskPosition>();
       
+      // Use either live time or custom time
+      const referenceTime = isLiveMode.value ? new Date() : customNowTime.value;
+      
       // Calculate raw positions for all tasks
       tasksToShow.value.forEach(task => {
         positions.set(
           task.id,
-          calculateTaskPosition(task, timeScale.value)
+          calculateTaskPosition(task, timeScale.value, referenceTime)
         );
       });
       
@@ -201,6 +257,36 @@ export default defineComponent({
       });
     };
     
+    // Toggle live mode state directly
+    const toggleLiveMode = () => {
+      isLiveMode.value = !isLiveMode.value;
+      handleLiveModeChange(isLiveMode.value);
+    };
+    
+    // Handle live mode changes
+    const handleLiveModeChange = (newValue: boolean) => {
+      // Save to settings
+      settingsStore.updateSettings({
+        visualizationTimeMode: newValue ? 'live' : 'custom'
+      });
+      
+      if (newValue) {
+        // When switching to live mode, start updates
+        if (liveUpdateTimer === null) {
+          liveUpdateTimer = window.setInterval(() => {
+            calculateTaskPositions();
+          }, 60000); // Update every minute
+        }
+        calculateTaskPositions();
+      } else {
+        // When switching to custom mode, stop updates
+        if (liveUpdateTimer !== null) {
+          window.clearInterval(liveUpdateTimer);
+          liveUpdateTimer = null;
+        }
+      }
+    };
+    
     // Watch for changes in time scale
     watch(timeScale, () => {
       calculateTaskPositions();
@@ -223,6 +309,20 @@ export default defineComponent({
     // Initialize positions on mount
     onMounted(() => {
       calculateTaskPositions();
+      
+      // Start timer for live updates if in live mode
+      if (isLiveMode.value) {
+        liveUpdateTimer = window.setInterval(() => {
+          calculateTaskPositions();
+        }, 60000); // Update every minute
+      }
+    });
+    
+    // Clean up timers
+    onUnmounted(() => {
+      if (liveUpdateTimer !== null) {
+        window.clearInterval(liveUpdateTimer);
+      }
     });
     
     return {
@@ -230,6 +330,11 @@ export default defineComponent({
       scene,
       camera,
       timeScale,
+      isLiveMode,
+      customNowTimeInput,
+      updateCustomTime,
+      handleLiveModeChange,
+      toggleLiveMode,
       selectedTaskId,
       selectedTask,
       taskPositions,
@@ -261,8 +366,40 @@ export default defineComponent({
   bottom: 20px;
   width: 100%;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   z-index: 10;
+  gap: 10px;
+  
+  .time-controls {
+    width: 80%;
+    max-width: 400px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    
+      .now-time-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        
+        .toggle-wrapper {
+          cursor: pointer;
+        }
+      
+      .time-picker {
+        padding: 5px 10px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--color-primary);
+        border-radius: 4px;
+        color: var(--color-text-primary);
+        font-family: var(--font-primary);
+        font-size: 0.9rem;
+      }
+    }
+  }
   
   :deep(.cyber-slider) {
     width: 80%;

@@ -13,6 +13,10 @@ const defaultSettings: UserSettings = {
   interfaceDensity: 'normal',
   fontSize: 1,
   
+  // Visualization time settings
+  visualizationTimeMode: 'live',
+  customNowTime: new Date().toISOString(),
+  
   // Performance settings
   performanceMode: false,
   webglQuality: 'medium',
