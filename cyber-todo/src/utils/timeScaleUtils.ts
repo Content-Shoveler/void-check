@@ -3,6 +3,28 @@
  */
 import type { Task } from '../types';
 
+// Time scale constants in milliseconds
+export const TIME_SCALES = {
+  MINUTE: 60 * 1000,
+  HOUR: 60 * 60 * 1000,
+  DAY: 24 * 60 * 60 * 1000,
+  WEEK: 7 * 24 * 60 * 60 * 1000,
+  MONTH: 30 * 24 * 60 * 60 * 1000,
+  QUARTER: 90 * 24 * 60 * 60 * 1000,
+  YEAR: 365 * 24 * 60 * 60 * 1000
+};
+
+// Time scale slider marks for UI
+export const TIME_SCALE_MARKS = [
+  { value: 0, label: '1m' },   // 1 minute
+  { value: 2, label: '1h' },   // 1 hour
+  { value: 4, label: '1d' },   // 1 day
+  { value: 6, label: '1w' },   // 1 week
+  { value: 7, label: '1m' },   // 1 month
+  { value: 8.5, label: '1q' }, // 1 quarter
+  { value: 10, label: '1y' }   // 1 year
+];
+
 // Position type for task entities in 3D space
 export interface TaskPosition {
   x: number;
@@ -10,6 +32,86 @@ export interface TaskPosition {
   z: number;
   distance?: number; // Distance from center
   angle?: number;    // Angle in radians
+}
+
+/**
+ * Get the scaling factor for task positions based on time scale
+ * Lower values (1m) produce larger scaling (zoomed in effect) 
+ * Higher values (1y) produce smaller scaling (zoomed out effect)
+ * 
+ * @param sliderValue Slider value (0-10)
+ * @returns Scaling factor
+ */
+export function getPositionScalingFactor(sliderValue: number): number {
+  // Scale goes from ~0.1 (most zoomed in at 1m) to ~2.0 (most zoomed out at 1y)
+  // At 0 (1m), we want objects to appear 10x larger (closer)
+  // At 10 (1y), we want objects to appear 2x smaller (further away)
+  
+  // Convert slider value to 0-1 range
+  const normValue = sliderValue / 10;
+  
+  // Calculate scaling with exponential curve for more natural scaling
+  // This creates a non-linear effect where early changes are more dramatic
+  const baseScale = 0.1; // Scaling at 1m view
+  const maxScale = 2.0;  // Scaling at 1y view
+  
+  return baseScale + Math.pow(normValue, 1.5) * (maxScale - baseScale);
+}
+
+/**
+ * Get the current time scale in milliseconds based on slider position
+ * 
+ * @param sliderValue Value from the slider (0-10)
+ * @returns Time scale in milliseconds
+ */
+export function getTimeScaleMs(sliderValue: number): number {
+  // If at the min or max, return exact time scale
+  if (sliderValue <= 0) return TIME_SCALES.MINUTE;
+  if (sliderValue >= 10) return TIME_SCALES.YEAR;
+  
+  // Find the two marks that this value falls between
+  let lowerMark = TIME_SCALE_MARKS[0];
+  let upperMark = TIME_SCALE_MARKS[TIME_SCALE_MARKS.length - 1];
+  
+  for (let i = 0; i < TIME_SCALE_MARKS.length - 1; i++) {
+    if (sliderValue >= TIME_SCALE_MARKS[i].value && sliderValue <= TIME_SCALE_MARKS[i + 1].value) {
+      lowerMark = TIME_SCALE_MARKS[i];
+      upperMark = TIME_SCALE_MARKS[i + 1];
+      break;
+    }
+  }
+  
+  // Calculate the percentage between the two marks
+  const range = upperMark.value - lowerMark.value;
+  const percentInRange = (sliderValue - lowerMark.value) / range;
+  
+  // Get the time scale values for both marks
+  let lowerTimeMs = TIME_SCALES.MINUTE;
+  let upperTimeMs = TIME_SCALES.YEAR;
+  
+  // Map labels to time scales
+  switch (lowerMark.label) {
+    case '1m': lowerTimeMs = TIME_SCALES.MINUTE; break;
+    case '1h': lowerTimeMs = TIME_SCALES.HOUR; break;
+    case '1d': lowerTimeMs = TIME_SCALES.DAY; break;
+    case '1w': lowerTimeMs = TIME_SCALES.WEEK; break;
+    case '1m': lowerTimeMs = TIME_SCALES.MONTH; break;
+    case '1q': lowerTimeMs = TIME_SCALES.QUARTER; break;
+    case '1y': lowerTimeMs = TIME_SCALES.YEAR; break;
+  }
+  
+  switch (upperMark.label) {
+    case '1m': upperTimeMs = TIME_SCALES.MINUTE; break;
+    case '1h': upperTimeMs = TIME_SCALES.HOUR; break;
+    case '1d': upperTimeMs = TIME_SCALES.DAY; break;
+    case '1w': upperTimeMs = TIME_SCALES.WEEK; break;
+    case '1m': upperTimeMs = TIME_SCALES.MONTH; break;
+    case '1q': upperTimeMs = TIME_SCALES.QUARTER; break;
+    case '1y': upperTimeMs = TIME_SCALES.YEAR; break;
+  }
+  
+  // Use an exponential interpolation for smoother scaling between time periods
+  return lowerTimeMs * Math.pow(upperTimeMs / lowerTimeMs, percentInRange);
 }
 
 /**
@@ -27,42 +129,51 @@ export function calculateTaskPosition(task: Task, timeScale: number): TaskPositi
   // Calculate time difference in milliseconds
   const dueDate = new Date(task.dueDate);
   const timeDifference = dueDate.getTime() - now.getTime();
-  
-  // Normalize the time scale (0-10) to a reasonable spread factor
-  // Higher timeScale = more spread out tasks
-  const spreadFactor = 0.5 + (timeScale * 0.5);
-  
-  // Base scaling to convert milliseconds to spatial units
-  // One day = approximately 10 units at default scale
-  const dayInMs = 24 * 60 * 60 * 1000;
-  const baseScale = 10 / dayInMs;
-  
-  // Calculate orbital radius based on time difference
-  // This represents the "orbit" distance from the center
   const absTimeDifference = Math.abs(timeDifference);
   
-  // Create discrete orbit rings - group similar time frames
-  // Tasks due within similar timeframes will be in the same orbit
-  const weekInMs = 7 * dayInMs;
-  const monthInMs = 30 * dayInMs;
+  // Base radius constants for different time periods
+  const baseRadii = {
+    minute: 8,
+    hour: 15,
+    day: 22,
+    week: 30,
+    month: 40,
+    quarter: 55,
+    year: 75
+  };
   
+  // Determine which orbit to place the task in based on its due time
   let orbitRadius;
-  if (absTimeDifference < dayInMs) {
-    // Tasks due today - inner orbit
-    orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
-  } else if (absTimeDifference < weekInMs) {
-    // Tasks due this week - middle orbit
-    orbitRadius = 15 + ((absTimeDifference - dayInMs) / weekInMs) * 10;
-  } else if (absTimeDifference < monthInMs) {
-    // Tasks due this month - outer orbit
-    orbitRadius = 25 + ((absTimeDifference - weekInMs) / monthInMs) * 15;
+  
+  if (absTimeDifference < TIME_SCALES.MINUTE) {
+    // Tasks due within a minute - innermost orbit
+    orbitRadius = baseRadii.minute * (0.5 + absTimeDifference / TIME_SCALES.MINUTE * 0.5);
+  } else if (absTimeDifference < TIME_SCALES.HOUR) {
+    // Tasks due within an hour
+    orbitRadius = baseRadii.hour * (0.8 + (absTimeDifference - TIME_SCALES.MINUTE) / (TIME_SCALES.HOUR - TIME_SCALES.MINUTE) * 0.2);
+  } else if (absTimeDifference < TIME_SCALES.DAY) {
+    // Tasks due within a day
+    orbitRadius = baseRadii.day * (0.8 + (absTimeDifference - TIME_SCALES.HOUR) / (TIME_SCALES.DAY - TIME_SCALES.HOUR) * 0.2);
+  } else if (absTimeDifference < TIME_SCALES.WEEK) {
+    // Tasks due within a week
+    orbitRadius = baseRadii.week * (0.8 + (absTimeDifference - TIME_SCALES.DAY) / (TIME_SCALES.WEEK - TIME_SCALES.DAY) * 0.2);
+  } else if (absTimeDifference < TIME_SCALES.MONTH) {
+    // Tasks due within a month
+    orbitRadius = baseRadii.month * (0.8 + (absTimeDifference - TIME_SCALES.WEEK) / (TIME_SCALES.MONTH - TIME_SCALES.WEEK) * 0.2);
+  } else if (absTimeDifference < TIME_SCALES.QUARTER) {
+    // Tasks due within a quarter
+    orbitRadius = baseRadii.quarter * (0.8 + (absTimeDifference - TIME_SCALES.MONTH) / (TIME_SCALES.QUARTER - TIME_SCALES.MONTH) * 0.2);
   } else {
-    // Tasks due beyond a month - furthest orbit
-    orbitRadius = 40 + (Math.log(absTimeDifference / monthInMs) * 10);
+    // Tasks due beyond a quarter
+    orbitRadius = baseRadii.year * (0.8 + Math.min(1, (absTimeDifference - TIME_SCALES.QUARTER) / (TIME_SCALES.YEAR - TIME_SCALES.QUARTER)) * 0.2);
   }
   
-  // Apply time scale factor
-  orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
+  // Apply scaling based on the current time scale (0-10)
+  // This creates the illusion of camera movement by scaling positions
+  // At 0 (1m), scaling is small (tasks appear further away from center)
+  // At 10 (1y), scaling is large (tasks appear closer to center)
+  const scalingFactor = getPositionScalingFactor(timeScale);
+  orbitRadius = orbitRadius / scalingFactor;
   
   // For completed tasks, place them in a different orbit (slightly further out)
   const distanceMultiplier = task.completed ? 1.2 : 1;
@@ -182,16 +293,6 @@ export function avoidClusters(positions: Map<string, TaskPosition>): Map<string,
         adjustedPos1.angle = Math.atan2(adjustedPos1.z, adjustedPos1.x);
         adjustedPos2.angle = Math.atan2(adjustedPos2.z, adjustedPos2.x);
         
-        // Optional: Maintain orbital radiuses, just adjust angles
-        // Uncomment these lines to keep tasks in perfect orbits
-        /*
-        adjustedPos1.x = Math.cos(adjustedPos1.angle) * radius1;
-        adjustedPos1.z = Math.sin(adjustedPos1.angle) * radius1;
-        
-        adjustedPos2.x = Math.cos(adjustedPos2.angle) * radius2;
-        adjustedPos2.z = Math.sin(adjustedPos2.angle) * radius2;
-        */
-        
         adjustedPositions.set(id1, adjustedPos1);
         adjustedPositions.set(id2, adjustedPos2);
       }
@@ -202,35 +303,113 @@ export function avoidClusters(positions: Map<string, TaskPosition>): Map<string,
 }
 
 /**
- * Calculate time scale in milliseconds from a 0-10 normalized value
+ * Get orbital ring configurations based on current time scale
+ * Returns radii and visibility for each time period ring
  * 
- * @param normalizedValue Normalized time scale (0-10)
- * @returns Time scale in milliseconds
+ * @param sliderValue Current slider value (0-10)
+ * @returns Array of orbital ring configurations
  */
-export function calculateTimeScaleMs(normalizedValue: number): number {
-  // Map 0-10 to different scales:
-  // 0 = 1 hour
-  // 5 = 1 day (default)
-  // 10 = 1 month
+export function getOrbitalRingConfig(sliderValue: number): { radius: number; opacity: number; label: string }[] {
+  // Base radius values
+  const baseRadii = {
+    minute: 8.5,
+    hour: 15.5,
+    day: 22.5,
+    week: 30.5,
+    month: 40.5,
+    quarter: 55.5, 
+    year: 75.5
+  };
   
-  const hourMs = 60 * 60 * 1000;
-  const dayMs = 24 * hourMs;
-  const monthMs = 30 * dayMs;
+  // Get normalized value (0-1) based on slider position
+  const normValue = sliderValue / 10;
   
-  if (normalizedValue <= 0) {
-    return hourMs;
-  } else if (normalizedValue >= 10) {
-    return monthMs;
+  // Apply scaling to ring radii based on time scale
+  const scalingFactor = getPositionScalingFactor(sliderValue);
+  
+  // Determine which rings to show based on the current time scale
+  // We'll show only 3 rings at most - current, next, and previous time periods
+  const result: { radius: number; opacity: number; label: string }[] = [];
+  
+  // Show different rings based on where we are in the time scale
+  if (normValue < 0.2) {
+    // 1m - 1h range: show minute and hour rings
+    result.push({ 
+      radius: baseRadii.minute / scalingFactor, 
+      opacity: 0.8, 
+      label: '1m'
+    });
+    result.push({ 
+      radius: baseRadii.hour / scalingFactor, 
+      opacity: 0.4, 
+      label: '1h'
+    });
+  } 
+  else if (normValue < 0.4) {
+    // 1h - 1d range: show hour and day rings
+    result.push({ 
+      radius: baseRadii.hour / scalingFactor, 
+      opacity: 0.8, 
+      label: '1h'
+    });
+    result.push({ 
+      radius: baseRadii.day / scalingFactor, 
+      opacity: 0.4, 
+      label: '1d'
+    });
+  }
+  else if (normValue < 0.6) {
+    // 1d - 1w range: show day and week rings
+    result.push({ 
+      radius: baseRadii.day / scalingFactor, 
+      opacity: 0.8, 
+      label: '1d'
+    });
+    result.push({ 
+      radius: baseRadii.week / scalingFactor, 
+      opacity: 0.4, 
+      label: '1w'
+    });
+  }
+  else if (normValue < 0.75) {
+    // 1w - 1m range: show week and month rings
+    result.push({ 
+      radius: baseRadii.week / scalingFactor, 
+      opacity: 0.8, 
+      label: '1w'
+    });
+    result.push({ 
+      radius: baseRadii.month / scalingFactor, 
+      opacity: 0.4, 
+      label: '1m'
+    });
+  }
+  else if (normValue < 0.85) {
+    // 1m - 1q range: show month and quarter rings
+    result.push({ 
+      radius: baseRadii.month / scalingFactor, 
+      opacity: 0.8, 
+      label: '1m'
+    });
+    result.push({ 
+      radius: baseRadii.quarter / scalingFactor, 
+      opacity: 0.4, 
+      label: '1q'
+    });
+  }
+  else {
+    // 1q - 1y range: show quarter and year rings
+    result.push({ 
+      radius: baseRadii.quarter / scalingFactor, 
+      opacity: 0.8, 
+      label: '1q'
+    });
+    result.push({ 
+      radius: baseRadii.year / scalingFactor, 
+      opacity: 0.4, 
+      label: '1y'
+    });
   }
   
-  // Exponential scaling between hour, day, and month
-  if (normalizedValue < 5) {
-    // Scale between 1 hour and 1 day (0-5)
-    const t = normalizedValue / 5;
-    return hourMs + (dayMs - hourMs) * t;
-  } else {
-    // Scale between 1 day and 1 month (5-10)
-    const t = (normalizedValue - 5) / 5;
-    return dayMs + (monthMs - dayMs) * t;
-  }
+  return result;
 }

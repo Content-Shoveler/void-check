@@ -12,6 +12,8 @@
         :max="10"
         :step="0.1"
         label="Time Scale"
+        :marks="timeScaleMarks"
+        show-mark-labels
       />
     </div>
     
@@ -56,7 +58,13 @@ import * as THREE from 'three';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '../../store/modules/tasks';
 import { useSettingsStore } from '../../store/modules/settings';
-import { calculateTaskPosition, avoidClusters } from '../../utils/timeScaleUtils';
+import { 
+  calculateTaskPosition, 
+  avoidClusters, 
+  TIME_SCALE_MARKS, 
+  getPositionScalingFactor,
+  getOrbitalRingConfig
+} from '../../utils/timeScaleUtils';
 import type { TaskPosition } from '../../utils/timeScaleUtils';
 import type { Task } from '../../types';
 import SpaceRenderer from './SpaceRenderer.vue';
@@ -88,8 +96,9 @@ export default defineComponent({
     const scene = ref<THREE.Scene | null>(null);
     const camera = ref<THREE.Camera | null>(null);
     
-    // Time scale control (0-10)
+    // Time scale control (0-10) with marks
     const timeScale = ref(settingsStore.settings.defaultTimeScale || 5);
+    const timeScaleMarks = computed(() => TIME_SCALE_MARKS);
     
     // Selected task
     const selectedTaskId = ref<string | null>(null);
@@ -154,6 +163,19 @@ export default defineComponent({
       const position = taskPositions.value.get(taskId);
       return position ? position : { x: 0, y: 0, z: 0 };
     };
+    
+    // Scaling factor for positions based on time scale
+    const scalingFactor = computed(() => getPositionScalingFactor(timeScale.value));
+    
+    // Current orbital ring configurations
+    const orbitalRings = computed(() => getOrbitalRingConfig(timeScale.value));
+    
+    // Update orbital rings when time scale changes
+    watch(orbitalRings, (newRings) => {
+      if (rendererRef.value && scene.value) {
+        rendererRef.value.updateOrbitalRings?.(newRings);
+      }
+    });
     
     // Handle scene ready event
     const handleSceneReady = (data: { scene: THREE.Scene; camera: THREE.Camera }) => {
@@ -224,10 +246,13 @@ export default defineComponent({
       scene,
       camera,
       timeScale,
+      timeScaleMarks,
       selectedTaskId,
       selectedTask,
       taskPositions,
       positionedTasks,
+      scalingFactor,
+      orbitalRings,
       getTaskPosition,
       handleSceneReady,
       handleTaskClick,

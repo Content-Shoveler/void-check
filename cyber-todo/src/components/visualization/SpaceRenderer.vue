@@ -18,6 +18,13 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useSettingsStore } from '../../store/modules/settings';
 import { isWebGLAvailable, getOptimalPixelRatio } from '../../utils/webglUtils';
 
+// Define interfaces for our custom methods
+interface RingConfig {
+  radius: number;
+  opacity: number;
+  label: string;
+}
+
 export default defineComponent({
   name: 'SpaceRenderer',
   
@@ -28,7 +35,7 @@ export default defineComponent({
     }
   },
   
-  emits: ['scene-ready', 'render'],
+  emits: ['scene-ready', 'render', 'camera-updated'],
   
   setup(props, { emit }) {
     const containerRef = ref<HTMLElement | null>(null);
@@ -41,6 +48,9 @@ export default defineComponent({
     let renderer: THREE.WebGLRenderer | null = null;
     let controls: OrbitControls | null = null;
     let animationFrameId: number | null = null;
+    
+    // Store references to orbital rings for dynamic updates
+    const orbitalRings: THREE.Mesh[] = [];
     
     // Store resize handler reference for cleanup
     let resizeHandler: ((e: UIEvent) => void) | null = null;
@@ -144,8 +154,7 @@ export default defineComponent({
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
       
-      // Create orbital plane visualization
-      createOrbitalPlane();
+      // Create orbital rings handled by updateOrbitalRings
       
       // Create star field background
       createStarField();
@@ -188,54 +197,7 @@ export default defineComponent({
       return true;
     };
     
-    // Create visualization of orbital rings
-    const createOrbitalPlane = () => {
-      if (!scene) return;
-      
-      // Create concentric orbital rings
-      const ringGeometry1 = new THREE.RingGeometry(8, 8.5, 64);
-      const ringGeometry2 = new THREE.RingGeometry(15, 15.5, 64);
-      const ringGeometry3 = new THREE.RingGeometry(25, 25.5, 64);
-      const ringGeometry4 = new THREE.RingGeometry(40, 40.5, 64);
-      
-      const ringMaterial = new THREE.MeshBasicMaterial({
-        color: 0x0066cc,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide
-      });
-      
-      const ring1 = new THREE.Mesh(ringGeometry1, ringMaterial);
-      const ring2 = new THREE.Mesh(ringGeometry2, ringMaterial);
-      const ring3 = new THREE.Mesh(ringGeometry3, ringMaterial);
-      const ring4 = new THREE.Mesh(ringGeometry4, ringMaterial);
-      
-      // Position rings slightly below task plane
-      ring1.position.y = -0.2;
-      ring2.position.y = -0.2;
-      ring3.position.y = -0.2;
-      ring4.position.y = -0.2;
-      
-      // Rotate rings to lay flat on XZ plane
-      ring1.rotation.x = Math.PI / 2;
-      ring2.rotation.x = Math.PI / 2;
-      ring3.rotation.x = Math.PI / 2;
-      ring4.rotation.x = Math.PI / 2;
-      
-      scene.add(ring1);
-      scene.add(ring2);
-      scene.add(ring3);
-      scene.add(ring4);
-      
-      // Add subtle animation to rings
-      animationCallbacks.push((time) => {
-        const speed = 0.0002;
-        ring1.rotation.z = time * speed;
-        ring2.rotation.z = time * speed * 0.8;
-        ring3.rotation.z = time * speed * 0.6;
-        ring4.rotation.z = time * speed * 0.4;
-      });
-    };
+    // Orbital rings are now created dynamically via updateOrbitalRings
     
     // Create center marker representing current time ("sun")
     const createCenterTimeMarker = () => {
@@ -285,16 +247,14 @@ export default defineComponent({
       scene.add(centerMarker);
       
       // Add pulsing effect animation
-      animationCallbacks.push((time) => {
+      const markerAnimation = (time: number) => {
         if (centerMarker && material.uniforms) {
           // Update time uniform for shader animation
           material.uniforms.time.value = time;
-          
-          // Add subtle size pulsing
-          // const pulse = 1.0 + Math.sin(time * 0.002) * 0.1;
-          // centerMarker.scale.set(pulse, pulse, pulse);
         }
-      });
+      };
+      
+      animationCallbacks.push(markerAnimation);
       
       // Create corona effect with particles around the sun
       const particleCount = 300;
@@ -326,12 +286,14 @@ export default defineComponent({
       scene.add(particles);
       
       // Add subtle rotation to particles
-      animationCallbacks.push((time) => {
+      const particleAnimation = (time: number) => {
         if (particles) {
           particles.rotation.y = time * 0.0003;
           particles.rotation.x = time * 0.0002;
         }
-      });
+      };
+      
+      animationCallbacks.push(particleAnimation);
     };
     
     // Create star field as background
@@ -339,7 +301,6 @@ export default defineComponent({
       if (!scene) return;
       
       const starCount = settingsStore.isPerformanceMode ? 500 : 2000;
-      const starColors = [0xffffff, 0xffffee, 0xeeeeff];
       
       // Create star particles
       const starsGeometry = new THREE.BufferGeometry();
@@ -379,12 +340,95 @@ export default defineComponent({
       scene.add(stars);
       
       // Slowly rotate stars for ambient effect
-      animationCallbacks.push((time) => {
+      const starsAnimation = (time: number) => {
         if (stars) {
           stars.rotation.y = time * 0.00002;
           stars.rotation.x = time * 0.00001;
         }
+      };
+      
+      animationCallbacks.push(starsAnimation);
+    };
+    
+    // Update orbital rings based on time scale
+    const updateOrbitalRings = (
+      ringConfigs: RingConfig[]
+    ) => {
+      if (!scene) return false;
+      
+      // Clean up existing rings
+      orbitalRings.forEach(ring => {
+        if (scene && ring) {
+          scene.remove(ring);
+          if (ring.geometry) {
+            ring.geometry.dispose();
+          }
+          if (ring.material && !Array.isArray(ring.material)) {
+            ring.material.dispose();
+          }
+        }
       });
+      orbitalRings.length = 0;
+      
+      // Create new rings based on configs
+      ringConfigs.forEach(config => {
+        const innerRadius = config.radius;
+        const outerRadius = config.radius + 0.5;
+        
+        const ringGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 64);
+        
+        const ringMaterial = new THREE.MeshBasicMaterial({
+          color: 0x0066cc,
+          transparent: true,
+          opacity: config.opacity,
+          side: THREE.DoubleSide
+        });
+        
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        
+        // Position ring slightly below task plane
+        ring.position.y = -0.2;
+        
+        // Rotate ring to lay flat on XZ plane
+        ring.rotation.x = Math.PI / 2;
+        
+        // Add ring to scene
+        if (scene) {
+          scene.add(ring);
+        }
+        
+        // Store for updates and cleanup
+        orbitalRings.push(ring);
+        
+        // No labels needed - they're redundant with the slider markers
+      });
+      
+      // Add animations for all rings
+      const animationIndex = animationCallbacks.findIndex(
+        callback => callback.name === 'ringAnimation'
+      );
+      
+      if (animationIndex >= 0) {
+        animationCallbacks.splice(animationIndex, 1);
+      }
+      
+      function ringAnimation(time: number) {
+        orbitalRings.forEach((ring, index) => {
+          const speedFactor = 1 - (index / Math.max(1, orbitalRings.length)) * 0.6;
+          ring.rotation.z = time * 0.0002 * speedFactor;
+        });
+      }
+      
+      animationCallbacks.push(ringAnimation);
+      
+      return true;
+    };
+    
+    // Camera position is now fixed - no need for updateCameraPosition
+    
+    // Easing function for smoother animations
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     };
     
     // Cleanup when component is destroyed
@@ -494,7 +538,8 @@ export default defineComponent({
       addToScene,
       removeFromScene,
       addAnimationCallback,
-      removeAnimationCallback
+      removeAnimationCallback,
+      updateOrbitalRings
     };
   }
 });
