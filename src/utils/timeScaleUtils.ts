@@ -12,6 +12,8 @@ export interface TaskPosition {
   angle?: number;    // Angle in radians
 }
 
+export type RingPostion = [number, number, number];
+
 /**
  * Calculate a 2D position for a task based on its due date
  * and the current time scale factor, creating a solar system-like visualization
@@ -21,41 +23,50 @@ export interface TaskPosition {
  * @param referenceTime Optional reference time to use instead of current time
  * @returns Position in solar system space (primarily using X and Z axes)
  */
+
+export function calculateRingPosition(size: number): RingPostion {
+  // Current time as reference point
+  return [
+    size,
+    size + 0.5,
+    64
+  ]
+
+}
 export function calculateTaskPosition(task: Task, timeScale: number, referenceTime?: Date): TaskPosition {
   // Current time as reference point
   const now = referenceTime || new Date();
-  
+
   // Calculate time difference in milliseconds
   const dueDate = new Date(task.dueDate);
+  // console.log('dueDate', dueDate);
+  // console.log('now', now);
   const timeDifference = dueDate.getTime() - now.getTime();
-  
+
   // Normalize the time scale (0-10) to a reasonable spread factor
   // Higher timeScale = more spread out tasks
   const spreadFactor = 0.5 + (timeScale * 0.5);
-  
+
   // Base scaling to convert milliseconds to spatial units
   // One day = approximately 10 units at default scale
   const dayInMs = 24 * 60 * 60 * 1000;
-  const baseScale = 10 / dayInMs;
-  
+
   // Calculate orbital radius based on time difference
   // This represents the "orbit" distance from the center
   const absTimeDifference = Math.abs(timeDifference);
-  
-  // Create discrete orbit rings - group similar time frames
-  // Tasks due within similar timeframes will be in the same orbit
-  const weekInMs = 7 * dayInMs;
-  const monthInMs = 30 * dayInMs;
-  
-  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
-  
+
+  // console.log('absTimeDifference', absTimeDifference);
+
+  // let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
+  let orbitRadius = 5 * timeScale;
+
   // Apply time scale factor
-  orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
-  
+  // orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
+
   // For completed tasks, place them in a different orbit (slightly further out)
   const distanceMultiplier = task.completed ? 1.2 : 1;
   orbitRadius = orbitRadius * distanceMultiplier;
-  
+
   // Calculate angle around the orbit
   // Instead of having positive/negative Z for future/past,
   // we'll use the angle to represent this:

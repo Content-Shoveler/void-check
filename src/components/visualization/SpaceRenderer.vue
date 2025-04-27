@@ -17,6 +17,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useSettingsStore } from '../../store/modules/settings';
 import { isWebGLAvailable, getOptimalPixelRatio } from '../../utils/webglUtils';
+import { calculateRingPosition } from '../../utils/timeScaleUtils';
 
 export default defineComponent({
   name: 'SpaceRenderer',
@@ -193,10 +194,25 @@ export default defineComponent({
       if (!scene) return;
       
       // Create concentric orbital rings
-      const ringGeometry1 = new THREE.RingGeometry(8, 8.5, 64);
-      const ringGeometry2 = new THREE.RingGeometry(15, 15.5, 64);
-      const ringGeometry3 = new THREE.RingGeometry(25, 25.5, 64);
-      const ringGeometry4 = new THREE.RingGeometry(40, 40.5, 64);
+      console.log('Creating orbital rings...', calculateRingPosition(2));
+
+      const firstRingPosition = calculateRingPosition(7);
+      const secondRingPosition = calculateRingPosition(15);
+      const thirdRingPosition = calculateRingPosition(25);
+      const fourthRingPosition = calculateRingPosition(40);
+      const fifthRingPosition = calculateRingPosition(60);
+      const sixthRingPosition = calculateRingPosition(100);
+      const seventhRingPosition = calculateRingPosition(150);
+      const eighthRingPosition = calculateRingPosition(200);
+
+      const ringGeometry1 = new THREE.RingGeometry(...firstRingPosition);
+      const ringGeometry2 = new THREE.RingGeometry(...secondRingPosition);
+      const ringGeometry3 = new THREE.RingGeometry(...thirdRingPosition);
+      const ringGeometry4 = new THREE.RingGeometry(...fourthRingPosition);
+      const ringGeometry5 = new THREE.RingGeometry(...fifthRingPosition);
+      const ringGeometry6 = new THREE.RingGeometry(...sixthRingPosition);
+      const ringGeometry7 = new THREE.RingGeometry(...seventhRingPosition);
+      const ringGeometry8 = new THREE.RingGeometry(...eighthRingPosition);
       
       const ringMaterial = new THREE.MeshBasicMaterial({
         color: 0x0066cc,
@@ -209,23 +225,40 @@ export default defineComponent({
       const ring2 = new THREE.Mesh(ringGeometry2, ringMaterial);
       const ring3 = new THREE.Mesh(ringGeometry3, ringMaterial);
       const ring4 = new THREE.Mesh(ringGeometry4, ringMaterial);
+      const ring5 = new THREE.Mesh(ringGeometry5, ringMaterial);
+      const ring6 = new THREE.Mesh(ringGeometry6, ringMaterial);
+      const ring7 = new THREE.Mesh(ringGeometry7, ringMaterial);
+      const ring8 = new THREE.Mesh(ringGeometry8, ringMaterial);
       
       // Position rings slightly below task plane
       ring1.position.y = -0.2;
       ring2.position.y = -0.2;
       ring3.position.y = -0.2;
       ring4.position.y = -0.2;
-      
+      ring5.position.y = -0.2;
+      ring6.position.y = -0.2;
+      ring7.position.y = -0.2;
+      ring8.position.y = -0.2;
+
       // Rotate rings to lay flat on XZ plane
       ring1.rotation.x = Math.PI / 2;
       ring2.rotation.x = Math.PI / 2;
       ring3.rotation.x = Math.PI / 2;
       ring4.rotation.x = Math.PI / 2;
+      ring5.rotation.x = Math.PI / 2;
+      ring6.rotation.x = Math.PI / 2;
+      ring7.rotation.x = Math.PI / 2;
+      ring8.rotation.x = Math.PI / 2;
+
       
       scene.add(ring1);
       scene.add(ring2);
       scene.add(ring3);
       scene.add(ring4);
+      scene.add(ring5);
+      scene.add(ring6);
+      scene.add(ring7);
+      scene.add(ring8);
       
       // Add subtle animation to rings
       animationCallbacks.push((time) => {
@@ -234,6 +267,10 @@ export default defineComponent({
         ring2.rotation.z = time * speed * 0.8;
         ring3.rotation.z = time * speed * 0.6;
         ring4.rotation.z = time * speed * 0.4;
+        ring5.rotation.z = time * speed * 0.2;
+        ring6.rotation.z = time * speed * 0.1;
+        ring7.rotation.z = time * speed * 0.05;
+        ring8.rotation.z = time * speed * 0.025;
       });
     };
     
