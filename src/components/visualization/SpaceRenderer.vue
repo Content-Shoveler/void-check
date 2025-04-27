@@ -242,7 +242,7 @@ export default defineComponent({
       if (!scene) return;
       
       // Create a larger, sun-like sphere to represent the current time center point
-      const geometry = new THREE.SphereGeometry(4, 32, 32);
+      const geometry = new THREE.SphereGeometry(2, 32, 32);
       
       // Create custom shader material with sun-like gradient and glow
       const material = new THREE.ShaderMaterial({
@@ -291,19 +291,19 @@ export default defineComponent({
           material.uniforms.time.value = time;
           
           // Add subtle size pulsing
-          // const pulse = 1.0 + Math.sin(time * 0.002) * 0.1;
+          // const pulse = 1.0 + Math.sin(time * 0.002) * 0.05;
           // centerMarker.scale.set(pulse, pulse, pulse);
         }
       });
       
       // Create corona effect with particles around the sun
-      const particleCount = 300;
+      const particleCount = 50;
       const particlesGeometry = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
       
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        const radius = 4 + Math.random();
+        const radius = 2 + Math.random();
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
         

@@ -16,7 +16,7 @@
     </div>
     
     <div v-if="selectedTask" class="task-details">
-      <cyber-card>
+      <!-- <cyber-card>
         <h3>{{ selectedTask.title }}</h3>
         <p v-if="selectedTask.description">{{ selectedTask.description }}</p>
         <div class="task-meta">
@@ -31,7 +31,7 @@
             {{ selectedTask.completed ? 'Completed' : 'Mark Complete' }}
           </cyber-button>
         </div>
-      </cyber-card>
+      </cyber-card> -->
     </div>
     
     <!-- Create task entities for each task (only when scene and camera are ready) -->
