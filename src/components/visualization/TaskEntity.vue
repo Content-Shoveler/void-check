@@ -154,7 +154,7 @@ export default defineComponent({
         // Convert mouse position to normalized device coordinates
         const mouse = new THREE.Vector2();
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1.1;
         
         // Update the raycaster
         raycaster.setFromCamera(mouse, props.camera);

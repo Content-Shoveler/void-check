@@ -45,6 +45,7 @@
         :position="getTaskPosition(task.id)"
         :selected="selectedTaskId === task.id"
         @click="handleTaskClick"
+        @hover="handleTaskHover"
       />
     </template>
   </div>
@@ -164,6 +165,11 @@ export default defineComponent({
       // Calculate initial positions
       calculateTaskPositions();
     };
+
+    // Handle task hover event
+    const handleTaskHover = (taskId: string) => {
+      selectedTaskId.value = taskId;
+    };
     
     // Handle task click
     const handleTaskClick = (taskId: string) => {
@@ -231,6 +237,7 @@ export default defineComponent({
       getTaskPosition,
       handleSceneReady,
       handleTaskClick,
+      handleTaskHover,
       openTaskDetails,
       toggleTaskCompletion,
       formatDate
