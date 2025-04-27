@@ -43,7 +43,7 @@ const defaultSettings: UserSettings = {
 }
 
 // Local storage key
-const STORAGE_KEY = 'cybertodo_settings'
+const STORAGE_KEY = 'voidcheck_settings'
 
 export const useSettingsStore = defineStore('settings', () => {
   // State

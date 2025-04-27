@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Cyberpunk Space Todo',
-        short_name: 'CyberTodo',
+        short_name: 'VoidCheck',
         description: 'A cyberpunk space-themed task management application',
         theme_color: '#050718',
         background_color: '#050718',

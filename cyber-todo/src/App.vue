@@ -6,7 +6,7 @@
     <!-- App Header -->
     <header class="app-header">
       <div class="container flex-between">
-        <h1 class="app-title cyber-text-glow">CyberTodo</h1>
+        <h1 class="app-title cyber-text-glow">VoidCheck</h1>
         <nav class="app-nav">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/tasks" class="nav-link">Tasks</router-link>

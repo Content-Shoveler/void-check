@@ -4,16 +4,16 @@ import type { Table } from 'dexie';
 import type { Task } from '../types';
 
 /**
- * CyberTodoDB - Database service for the Cyberpunk Space Todo application
+ * VoidCheckDB - Database service for the Cyberpunk Space Todo application
  * 
  * This service provides access to the IndexedDB database using Dexie.js
  */
-export class CyberTodoDB extends Dexie {
+export class VoidCheckDB extends Dexie {
   // Table definitions
   tasks!: Table<Task, string>; // string = type of the primary key
 
   constructor() {
-    super('CyberTodoDB');
+    super('VoidCheckDB');
     
     // Define database schema with indexes for efficient querying
     this.version(1).stores({
@@ -43,6 +43,6 @@ export class CyberTodoDB extends Dexie {
 }
 
 // Create a singleton instance of the database
-const db = new CyberTodoDB();
+const db = new VoidCheckDB();
 
 export default db;

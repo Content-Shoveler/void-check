@@ -33,7 +33,7 @@ A sophisticated Vue 3 PWA application with an immersive cyberpunk space theme, f
 1. Clone the repository
 ```
 git clone [repository-url]
-cd cyber-todo
+cd void-check
 ```
 
 2. Install dependencies
@@ -54,7 +54,7 @@ yarn build
 ## Project Structure
 
 ```
-cyber-todo/
+void-check/
 ├── public/                  # Static files
 ├── src/
 │   ├── assets/              # Static assets

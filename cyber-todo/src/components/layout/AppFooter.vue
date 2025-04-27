@@ -2,7 +2,7 @@
   <footer class="app-footer">
     <div class="app-footer__container">
       <div class="app-footer__copyright">
-        © {{ currentYear }} <span class="app-footer__name">CyberTodo</span>
+        © {{ currentYear }} <span class="app-footer__name">VoidCheck</span>
       </div>
       
       <div class="app-footer__links">
