@@ -148,7 +148,7 @@ export default defineComponent({
       
       // Add click event using raycaster
       const raycaster = new THREE.Raycaster();
-      const handleRaycast = (event: MouseEvent, eventType: 'click' | 'hover') => {
+      const handleRaycast = (event: MouseEvent, eventType: 'click') => {
         if (!props.scene || !props.camera || !taskMesh) return;
         
         // Convert mouse position to normalized device coordinates
