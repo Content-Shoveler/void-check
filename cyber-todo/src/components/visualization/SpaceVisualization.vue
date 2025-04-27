@@ -2,17 +2,27 @@
   <div class="space-visualization">
     <space-renderer 
       ref="rendererRef"
+      :timeScale="timeScale"
       @scene-ready="handleSceneReady"
+      @time-warp-complete="handleTimeWarpComplete"
     />
     
     <div class="controls">
+      <div class="time-scale-display">{{ timeScaleLabel }}</div>
       <cyber-slider
         v-model="timeScale"
         :min="0"
-        :max="10"
-        :step="0.1"
+        :max="6"
+        :step="1"
         label="Time Scale"
+        @change="handleTimeScaleChange"
       />
+      <div class="time-scale-markers">
+        <div class="marker" v-for="(preset, index) in timeScalePresets" :key="index" 
+             :style="{ left: `${(preset.value / 6) * 100}%` }">
+          {{ preset.interval.substring(0, 1) }}
+        </div>
+      </div>
     </div>
     
     <div v-if="selectedTask" class="task-details">
@@ -56,7 +66,12 @@ import * as THREE from 'three';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '../../store/modules/tasks';
 import { useSettingsStore } from '../../store/modules/settings';
-import { calculateTaskPosition, avoidClusters } from '../../utils/timeScaleUtils';
+import { 
+  calculateTaskPosition, 
+  avoidClusters, 
+  getTimeScaleLabel, 
+  TIME_SCALE_PRESETS
+} from '../../utils/timeScaleUtils';
 import type { TaskPosition } from '../../utils/timeScaleUtils';
 import type { Task } from '../../types';
 import SpaceRenderer from './SpaceRenderer.vue';
@@ -88,8 +103,28 @@ export default defineComponent({
     const scene = ref<THREE.Scene | null>(null);
     const camera = ref<THREE.Camera | null>(null);
     
-    // Time scale control (0-10)
-    const timeScale = ref(settingsStore.settings.defaultTimeScale || 5);
+    // Time scale control (0-6)
+    const timeScale = ref(settingsStore.settings.defaultTimeScale || 2); // Default to day scale
+    
+    // Time scale presets for display
+    const timeScalePresets = TIME_SCALE_PRESETS;
+    
+    // Get human-readable time scale label
+    const timeScaleLabel = computed(() => {
+      return getTimeScaleLabel(timeScale.value);
+    });
+    
+    // Time scale change handler (for animations)
+    const timeWarpInProgress = ref(false);
+    
+    const handleTimeScaleChange = () => {
+      timeWarpInProgress.value = true;
+      // Actual position recalculation happens in watch handler
+    };
+    
+    const handleTimeWarpComplete = () => {
+      timeWarpInProgress.value = false;
+    };
     
     // Selected task
     const selectedTaskId = ref<string | null>(null);
@@ -224,6 +259,11 @@ export default defineComponent({
       scene,
       camera,
       timeScale,
+      timeScaleLabel,
+      timeScalePresets,
+      timeWarpInProgress,
+      handleTimeScaleChange,
+      handleTimeWarpComplete,
       selectedTaskId,
       selectedTask,
       taskPositions,
@@ -254,15 +294,44 @@ export default defineComponent({
   bottom: 20px;
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   z-index: 10;
   
   :deep(.cyber-slider) {
     width: 80%;
     max-width: 400px;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
     padding: 10px 20px;
     border-radius: 8px;
+    margin: 5px 0;
+  }
+  
+  .time-scale-display {
+    font-family: 'Orbitron', sans-serif;
+    color: #00AAFF;
+    font-size: 16px;
+    text-shadow: 0 0 10px rgba(0, 170, 255, 0.8);
+    margin-bottom: 5px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 15px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  
+  .time-scale-markers {
+    position: relative;
+    width: 80%;
+    max-width: 400px;
+    height: 20px;
+    
+    .marker {
+      position: absolute;
+      transform: translateX(-50%);
+      color: #00AAFF;
+      font-size: 12px;
+      opacity: 0.8;
+    }
   }
 }
 
