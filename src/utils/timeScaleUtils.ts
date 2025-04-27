@@ -47,20 +47,7 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
   const weekInMs = 7 * dayInMs;
   const monthInMs = 30 * dayInMs;
   
-  let orbitRadius;
-  if (absTimeDifference < dayInMs) {
-    // Tasks due today - inner orbit
-    orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
-  } else if (absTimeDifference < weekInMs) {
-    // Tasks due this week - middle orbit
-    orbitRadius = 15 + ((absTimeDifference - dayInMs) / weekInMs) * 10;
-  } else if (absTimeDifference < monthInMs) {
-    // Tasks due this month - outer orbit
-    orbitRadius = 25 + ((absTimeDifference - weekInMs) / monthInMs) * 15;
-  } else {
-    // Tasks due beyond a month - furthest orbit
-    orbitRadius = 40 + (Math.log(absTimeDifference / monthInMs) * 10);
-  }
+  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
   
   // Apply time scale factor
   orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
@@ -105,7 +92,8 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
     'critical': 1.5
   };
   
-  const yOffset = priorityMap[task.priority] || 0;
+  // const yOffset = priorityMap[task.priority] || 0;
+  const yOffset = 0;
   
   // For completed tasks, move them slightly lower
   const y = task.completed ? -0.5 : yOffset;
