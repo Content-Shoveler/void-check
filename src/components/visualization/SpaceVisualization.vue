@@ -29,7 +29,7 @@
         :min="1"
         :max="7"
         :step="0.1"
-        label="Time Scale"
+        label="Focus"
       />
     </div>
     
@@ -41,14 +41,14 @@
         <!-- <div class="task-meta">
           <cyber-badge :type="selectedTask.priority">{{ selectedTask.priority }}</cyber-badge>
         </div> -->
-        <!-- <div class="task-actions">
+        <div class="task-actions">
           <cyber-button size="small" @click="openTaskDetails(selectedTask.id)">
             View Details
           </cyber-button>
-          <cyber-button size="small" type="secondary" @click="toggleTaskCompletion(selectedTask)" :disabled="selectedTask.completed">
+          <!-- <cyber-button size="small" type="secondary" @click="toggleTaskCompletion(selectedTask)" :disabled="selectedTask.completed">
             {{ selectedTask.completed ? 'Completed' : 'Mark Complete' }}
-          </cyber-button>
-        </div> -->
+          </cyber-button> -->
+        </div>
       </cyber-card>
     </div>
 
@@ -209,7 +209,8 @@ export default defineComponent({
       const adjustedPositions = avoidClusters(positions);
       
       // Update positions map
-      taskPositions.value = adjustedPositions;
+      // taskPositions.value = adjustedPositions;
+      taskPositions.value = positions;
     };
     
     // Get position for a task with safe default

@@ -35,42 +35,60 @@ export function calculateRingPosition(size: number, timeScale: number, reference
 }
 export function calculateTaskPosition(task: Task, timeScale: number, referenceTime?: Date): TaskPosition {
 
+  const timeNotches = {
+    'hour': {
+      label: 'hour',
+      start: 1,
+      end: 6,
+      ms: 60 * 60 * 1000
+    },
+    'day': {
+      label: 'day',
+      start: 8,
+      end: 10,
+      ms: 24 * 60 * 60 * 1000
+    },
+    'week': {
+      label: 'week',
+      start: 15 ,
+      end: 20,
+      ms: 7 * 24 * 60 * 60 * 1000
+    },
+    'month': {
+      label: 'month',
+      start: 25,
+      end: 50,
+      ms: 30 * 24 * 60 * 60 * 1000
+    },
+    'quarter': {
+      label: 'quarter',
+      start: 40,
+      end: 100,
+      ms: 3 * 30 * 24 * 60 * 60 * 1000
+    },
+    'year': {
+      label: 'year',
+      start: 50,
+      end: 200,
+      ms: 365 * 24 * 60 * 60 * 1000
+    },
+  };
+
   const now = referenceTime || new Date();
   const dueDate = new Date(task.dueDate);
   const timeDifference = dueDate.getTime() - now.getTime();
 
-  // console.log('timeDifference', timeDifference);
-  // timeScale is 1 -7
+  let orbitRadius = 0;
 
-  // Normalize the time scale (0-10) to a reasonable spread factor
-  // Higher timeScale = more spread out tasks
-  const spreadFactor = 0.5 + (timeScale * 0.5);
-
-  // Base scaling to convert milliseconds to spatial units
-  // One day = approximately 10 units at default scale
-  const dayInMs = 24 * 60 * 60 * 1000;
-
-  // Calculate orbital radius based on time difference
-  // This represents the "orbit" distance from the center
-  const absTimeDifference = Math.abs(timeDifference);
-
-  // console.log('absTimeDifference', absTimeDifference);
-
-  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 2;
-  // let orbitRadius = 5 * timeScale;
-
-  // Apply time scale factor
-  orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
-
-  // For completed tasks, place them in a different orbit (slightly further out)
-  const distanceMultiplier = task.completed ? 1.2 : 1;
-  orbitRadius = orbitRadius * distanceMultiplier;
-
-  // Calculate angle around the orbit
-  // Instead of having positive/negative Z for future/past,
-  // we'll use the angle to represent this:
-  // - Future tasks: 0 to 180 degrees (right half of circle)
-  // - Past/overdue tasks: 180 to 360 degrees (left half of circle)
+// using the timeNotches to calculate the orbit radius
+  for (const key in timeNotches) {
+    const notch = timeNotches[key];
+    if (timeDifference < notch.ms) {
+      orbitRadius = notch.start + (notch.end - notch.start) * (timeDifference / notch.ms);
+      orbitRadius = orbitRadius * (timeScale + 0.5);
+      break;
+    } 
+  }
   
   // Start with base angle based on whether task is in future or past
   let baseAngle = timeDifference > 0 ? 0 : Math.PI;
@@ -88,20 +106,15 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
   
   // Priority affects Y position slightly (to add minimal 3D effect)
   // This gives a subtle height difference but keeps the main positioning on the 2D plane
-  // const priorityMap: Record<string, number> = {
-  //   'low': 0,
-  //   'medium': 0.5,
-  //   'high': 1,
-  //   'critical': 1.5
-  // };
+  const priorityMap: Record<string, number> = {
+    'low': 0,
+    'medium': 0.5,
+    'high': 1,
+    'critical': 1.5
+  };
   
-  // const yOffset = priorityMap[task.priority] || 0;
-  // const yOffset = 0;
-  
-  // For completed tasks, move them slightly lower
-  // const y = task.completed ? -0.5 : yOffset;
-
-  const y = 0;
+  const yOffset = priorityMap[task.priority] || 0;
+  const y = yOffset;
   
   // Calculate final position on the orbital plane
   const x = Math.cos(angle) * orbitRadius;
