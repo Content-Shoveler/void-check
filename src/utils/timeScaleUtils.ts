@@ -85,29 +85,24 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
   const idOffset = (idHash % 100) / 100;
   
   // Calculate final angle - spread tasks around their half of the circle
-  let angle;
-  if (timeDifference > 0) {
-    // Future tasks spread across 0 to 180 degrees
-    angle = baseAngle + (dayFactor + timeFactor + idOffset) * Math.PI;
-  } else {
-    // Past tasks spread across 180 to 360 degrees
-    angle = baseAngle + (dayFactor + timeFactor + idOffset) * Math.PI;
-  }
+  let angle = baseAngle + (dayFactor + timeFactor + idOffset) * Math.PI;
   
   // Priority affects Y position slightly (to add minimal 3D effect)
   // This gives a subtle height difference but keeps the main positioning on the 2D plane
-  const priorityMap: Record<string, number> = {
-    'low': 0,
-    'medium': 0.5,
-    'high': 1,
-    'critical': 1.5
-  };
+  // const priorityMap: Record<string, number> = {
+  //   'low': 0,
+  //   'medium': 0.5,
+  //   'high': 1,
+  //   'critical': 1.5
+  // };
   
   // const yOffset = priorityMap[task.priority] || 0;
-  const yOffset = 0;
+  // const yOffset = 0;
   
   // For completed tasks, move them slightly lower
-  const y = task.completed ? -0.5 : yOffset;
+  // const y = task.completed ? -0.5 : yOffset;
+
+  const y = 0;
   
   // Calculate final position on the orbital plane
   const x = Math.cos(angle) * orbitRadius;
