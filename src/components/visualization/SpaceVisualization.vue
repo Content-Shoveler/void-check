@@ -26,9 +26,9 @@
       </div>
       <cyber-slider
         v-model="timeScale"
-        :min="0"
-        :max="10"
-        :step="0.1"
+        :min="1"
+        :max="7"
+        :step="1"
         label="Time Scale"
       />
     </div>
@@ -51,13 +51,13 @@
         </div> -->
       </cyber-card>
     </div>
-    
+
     <!-- Create task entities for each task (only when scene and camera are ready) -->
     <template v-if="scene && camera">
       <task-entity
         v-for="task in positionedTasks"
         :key="task.id"
-        :task="task" 
+        :task="task"
         :scene="scene"
         :camera="camera"
         :position="getTaskPosition(task.id)"
@@ -109,8 +109,8 @@ export default defineComponent({
     const scene = ref<THREE.Scene | null>(null);
     const camera = ref<THREE.Camera | null>(null);
     
-    // Time scale control (0-10)
-    const timeScale = ref(settingsStore.settings.defaultTimeScale || 5);
+    // Time scale control (1-7)
+    const timeScale = ref(settingsStore.settings.defaultTimeScale || 4);
     
     // Now time control - initialize from settings
     const isLiveMode = ref(settingsStore.settings.visualizationTimeMode === 'live');
