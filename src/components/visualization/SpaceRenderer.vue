@@ -101,11 +101,12 @@ export default defineComponent({
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
         controls.rotateSpeed = 0.5;
-        controls.maxDistance = 180;
-        controls.minDistance = 40;
+        controls.maxDistance = 200;
+        controls.minDistance = 15;
         controls.minPolarAngle = Math.PI * 0.05; // Closer to top-down
-        controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal        // controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
+        controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = -0.1;
       }
       
       // Handle container resize
