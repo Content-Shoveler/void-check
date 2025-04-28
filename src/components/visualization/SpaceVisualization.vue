@@ -75,7 +75,7 @@ import * as THREE from 'three';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '../../store/modules/tasks';
 import { useSettingsStore } from '../../store/modules/settings';
-import { calculateTaskPosition, avoidClusters } from '../../utils/timeScaleUtils';
+import { calculateTaskPosition, avoidClusters, calculateRingPosition } from '../../utils/timeScaleUtils';
 import type { TaskPosition } from '../../utils/timeScaleUtils';
 import type { Task } from '../../types';
 import SpaceRenderer from './SpaceRenderer.vue';
@@ -286,10 +286,70 @@ export default defineComponent({
         }
       }
     };
+
+    // Setup rings
+    const rings = ref<THREE.Mesh[]>([]);
+    const createRings = () => {
+      if (!scene.value) return; // Ensure scene exists
+      
+      // Define ring radii
+      const ringRadii = [7, 15, 25, 40, 60, 100, 150, 200];
+      
+      // Clear existing rings if any
+      rings.value.forEach(ring => {
+        scene.value?.remove(ring);
+      });
+      rings.value = [];
+      
+      // Create rings material only once
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: 0x0066cc,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide
+      });
+      
+      // Create all rings in a loop
+      ringRadii.forEach(radius => {
+        const ringPosition = calculateRingPosition(radius, timeScale.value, customNowTime.value);
+        const ringGeometry = new THREE.RingGeometry(...ringPosition);
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        
+        // Essential: Rotate to be visible from camera perspective
+        ring.rotation.x = Math.PI / 2;
+        
+        // Position slightly below the task plane
+        ring.position.y = -0.2;
+        
+        // Add to our rings array
+        rings.value.push(ring);
+        
+        // Add to scene
+        scene.value?.add(ring);
+      });
+      
+      // Optionally add subtle rotation animation to rings
+      rendererRef.value?.addAnimationCallback((time) => {
+        const speed = 0.0002;
+        rings.value.forEach((ring, index) => {
+          // Decrease rotation speed for outer rings
+          const factor = 1 - (index * 0.1);
+          ring.rotation.z = time * speed * (factor > 0 ? factor : 0.05);
+        });
+      });
+    };
+    
+    // Wait for scene to be ready before creating rings
+    watch(() => scene.value, (newScene) => {
+      if (newScene) {
+        createRings();
+      }
+    });
     
     // Watch for changes in time scale
     watch(timeScale, () => {
       calculateTaskPositions();
+      createRings();
       
       // Save to settings
       settingsStore.updateSettings({

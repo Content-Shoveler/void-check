@@ -24,11 +24,11 @@ export type RingPostion = [number, number, number];
  * @returns Position in solar system space (primarily using X and Z axes)
  */
 
-export function calculateRingPosition(size: number): RingPostion {
-  // Current time as reference point
+export function calculateRingPosition(size: number, timeScale: number, referenceTime?: Date): RingPostion {
+  const scaledSize = size * (timeScale + 0.5);
   return [
-    size,
-    size + 0.5,
+    scaledSize,
+    scaledSize + 0.5,
     64
   ]
 
@@ -57,11 +57,11 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
 
   // console.log('absTimeDifference', absTimeDifference);
 
-  // let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
-  let orbitRadius = 5 * timeScale;
+  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
+  // let orbitRadius = 5 * timeScale;
 
   // Apply time scale factor
-  // orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
+  orbitRadius = orbitRadius * (0.5 + (spreadFactor * 0.5));
 
   // For completed tasks, place them in a different orbit (slightly further out)
   const distanceMultiplier = task.completed ? 1.2 : 1;

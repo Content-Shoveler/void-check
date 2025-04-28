@@ -17,7 +17,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useSettingsStore } from '../../store/modules/settings';
 import { isWebGLAvailable, getOptimalPixelRatio } from '../../utils/webglUtils';
-import { calculateRingPosition } from '../../utils/timeScaleUtils';
 
 export default defineComponent({
   name: 'SpaceRenderer',
@@ -104,11 +103,8 @@ export default defineComponent({
         controls.rotateSpeed = 0.5;
         controls.maxDistance = 180;
         controls.minDistance = 40;
-        // Limit vertical rotation more to encourage top-down view
         controls.minPolarAngle = Math.PI * 0.05; // Closer to top-down
-        controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal
-        // Add initial auto-rotation for solar system feel
-        // controls.autoRotate = true;
+        controls.maxPolarAngle = Math.PI * 0.5;  // Only allow down to horizontal        // controls.autoRotate = true;
         controls.autoRotateSpeed = 0.5;
       }
       
@@ -144,9 +140,6 @@ export default defineComponent({
       const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
-      
-      // Create orbital plane visualization
-      createOrbitalPlane();
       
       // Create star field background
       createStarField();
@@ -187,91 +180,6 @@ export default defineComponent({
       animate(0);
       
       return true;
-    };
-    
-    // Create visualization of orbital rings
-    const createOrbitalPlane = () => {
-      if (!scene) return;
-      
-      // Create concentric orbital rings
-      console.log('Creating orbital rings...', calculateRingPosition(2));
-
-      const firstRingPosition = calculateRingPosition(7);
-      const secondRingPosition = calculateRingPosition(15);
-      const thirdRingPosition = calculateRingPosition(25);
-      const fourthRingPosition = calculateRingPosition(40);
-      const fifthRingPosition = calculateRingPosition(60);
-      const sixthRingPosition = calculateRingPosition(100);
-      const seventhRingPosition = calculateRingPosition(150);
-      const eighthRingPosition = calculateRingPosition(200);
-
-      const ringGeometry1 = new THREE.RingGeometry(...firstRingPosition);
-      const ringGeometry2 = new THREE.RingGeometry(...secondRingPosition);
-      const ringGeometry3 = new THREE.RingGeometry(...thirdRingPosition);
-      const ringGeometry4 = new THREE.RingGeometry(...fourthRingPosition);
-      const ringGeometry5 = new THREE.RingGeometry(...fifthRingPosition);
-      const ringGeometry6 = new THREE.RingGeometry(...sixthRingPosition);
-      const ringGeometry7 = new THREE.RingGeometry(...seventhRingPosition);
-      const ringGeometry8 = new THREE.RingGeometry(...eighthRingPosition);
-      
-      const ringMaterial = new THREE.MeshBasicMaterial({
-        color: 0x0066cc,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide
-      });
-      
-      const ring1 = new THREE.Mesh(ringGeometry1, ringMaterial);
-      const ring2 = new THREE.Mesh(ringGeometry2, ringMaterial);
-      const ring3 = new THREE.Mesh(ringGeometry3, ringMaterial);
-      const ring4 = new THREE.Mesh(ringGeometry4, ringMaterial);
-      const ring5 = new THREE.Mesh(ringGeometry5, ringMaterial);
-      const ring6 = new THREE.Mesh(ringGeometry6, ringMaterial);
-      const ring7 = new THREE.Mesh(ringGeometry7, ringMaterial);
-      const ring8 = new THREE.Mesh(ringGeometry8, ringMaterial);
-      
-      // Position rings slightly below task plane
-      ring1.position.y = -0.2;
-      ring2.position.y = -0.2;
-      ring3.position.y = -0.2;
-      ring4.position.y = -0.2;
-      ring5.position.y = -0.2;
-      ring6.position.y = -0.2;
-      ring7.position.y = -0.2;
-      ring8.position.y = -0.2;
-
-      // Rotate rings to lay flat on XZ plane
-      ring1.rotation.x = Math.PI / 2;
-      ring2.rotation.x = Math.PI / 2;
-      ring3.rotation.x = Math.PI / 2;
-      ring4.rotation.x = Math.PI / 2;
-      ring5.rotation.x = Math.PI / 2;
-      ring6.rotation.x = Math.PI / 2;
-      ring7.rotation.x = Math.PI / 2;
-      ring8.rotation.x = Math.PI / 2;
-
-      
-      scene.add(ring1);
-      scene.add(ring2);
-      scene.add(ring3);
-      scene.add(ring4);
-      scene.add(ring5);
-      scene.add(ring6);
-      scene.add(ring7);
-      scene.add(ring8);
-      
-      // Add subtle animation to rings
-      animationCallbacks.push((time) => {
-        const speed = 0.0002;
-        ring1.rotation.z = time * speed;
-        ring2.rotation.z = time * speed * 0.8;
-        ring3.rotation.z = time * speed * 0.6;
-        ring4.rotation.z = time * speed * 0.4;
-        ring5.rotation.z = time * speed * 0.2;
-        ring6.rotation.z = time * speed * 0.1;
-        ring7.rotation.z = time * speed * 0.05;
-        ring8.rotation.z = time * speed * 0.025;
-      });
     };
     
     // Create center marker representing current time ("sun")
