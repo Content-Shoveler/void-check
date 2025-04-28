@@ -64,6 +64,7 @@
         :selected="selectedTaskId === task.id"
         @click="handleTaskClick"
         @hover="handleTaskHover"
+        @dblclick="handleTaskDoubleClick"
       />
     </template>
   </div>
@@ -230,6 +231,7 @@ export default defineComponent({
     // Handle task click
     const handleTaskClick = (taskId: string) => {
       selectedTaskId.value = taskId;
+      handleTaskDoubleClick(taskId); // For single click, we can just open task details
     };
     
     // Open task details
@@ -385,6 +387,47 @@ export default defineComponent({
       }
     });
     
+    // Handle task double-click event
+    const handleTaskDoubleClick = (taskId: string) => {
+      if (!rendererRef.value) return;
+      
+      const position = getTaskPosition(taskId);
+      rendererRef.value.focusOnPosition(new THREE.Vector3(position.x, position.y, position.z));
+    };
+    
+    // Add keydown handler for spacebar to reset camera
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && rendererRef.value) {
+        rendererRef.value.resetCameraPosition();
+        // Prevent page scroll
+        event.preventDefault();
+      }
+    };
+    
+    // Add keyboard event listener
+    onMounted(() => {
+      calculateTaskPositions();
+      
+      // Start timer for live updates if in live mode
+      if (isLiveMode.value) {
+        liveUpdateTimer = window.setInterval(() => {
+          calculateTaskPositions();
+        }, 60000); // Update every minute
+      }
+      
+      // Add keyboard listener for spacebar
+      window.addEventListener('keydown', handleKeyDown);
+    });
+    
+    // Clean up timers and event listeners
+    onUnmounted(() => {
+      if (liveUpdateTimer !== null) {
+        window.clearInterval(liveUpdateTimer);
+      }
+      
+      window.removeEventListener('keydown', handleKeyDown);
+    });
+    
     return {
       rendererRef,
       scene,
@@ -403,6 +446,7 @@ export default defineComponent({
       handleSceneReady,
       handleTaskClick,
       handleTaskHover,
+      handleTaskDoubleClick,
       openTaskDetails,
       toggleTaskCompletion,
       formatDate

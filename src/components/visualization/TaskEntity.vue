@@ -43,7 +43,7 @@ export default defineComponent({
     }
   },
   
-  emits: ['click', 'hover'],
+  emits: ['click', 'hover', 'dblclick'],
   
   setup(props, { emit }) {
     const settingsStore = useSettingsStore();
@@ -148,7 +148,7 @@ export default defineComponent({
       
       // Add click event using raycaster
       const raycaster = new THREE.Raycaster();
-      const handleRaycast = (event: MouseEvent, eventType: 'click') => {
+      const handleRaycast = (event: MouseEvent, eventType: 'click' | 'hover' | 'dblclick') => {
         if (!props.scene || !props.camera || !taskMesh) return;
         
         // Convert mouse position to normalized device coordinates
@@ -176,14 +176,17 @@ export default defineComponent({
       
       // Add listeners
       const handleClick = (event: MouseEvent) => handleRaycast(event, 'click');
+      const handleDoubleClick = (event: MouseEvent) => handleRaycast(event, 'dblclick');
       const handleMouseMove = (event: MouseEvent) => handleRaycast(event, 'hover');
       
       window.addEventListener('click', handleClick);
+      window.addEventListener('dblclick', handleDoubleClick);
       window.addEventListener('mousemove', handleMouseMove);
       
       // Store references for cleanup
       const cleanupFunctions = [
         () => window.removeEventListener('click', handleClick),
+        () => window.removeEventListener('dblclick', handleDoubleClick),
         () => window.removeEventListener('mousemove', handleMouseMove),
         () => {
           if (taskMesh && props.scene) {

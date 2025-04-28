@@ -42,6 +42,10 @@ export default defineComponent({
     let controls: OrbitControls | null = null;
     let animationFrameId: number | null = null;
     
+    // Store original camera settings for reset
+    let originalCameraPosition: THREE.Vector3 | null = null;
+    let originalOrbitTarget: THREE.Vector3 | null = null;
+    
     // Store resize handler reference for cleanup
     let resizeHandler: ((e: UIEvent) => void) | null = null;
     
@@ -84,6 +88,10 @@ export default defineComponent({
       camera.position.z = 40;
       camera.position.x = 0;
       camera.lookAt(0, 0, 0);
+      
+      // Store original camera position and target for reset functionality
+      originalCameraPosition = camera.position.clone();
+      originalOrbitTarget = new THREE.Vector3(0, 0, 0);
       
       // Initialize renderer with anti-aliasing if performance allows
       renderer = new THREE.WebGLRenderer({
@@ -434,13 +442,92 @@ export default defineComponent({
       return false;
     };
     
+    // Focus camera on a specific position
+    const focusOnPosition = (targetPosition: THREE.Vector3) => {
+      if (!camera || !controls) return false;
+      
+      // Store current positions
+      const currentCameraPos = camera.position.clone();
+      const currentTarget = controls.target.clone();
+      
+      // Calculate camera offset from target
+      const offset = new THREE.Vector3().subVectors(currentCameraPos, currentTarget);
+      
+      // Set new target to task position
+      const newTarget = targetPosition.clone();
+      
+      // Calculate new camera position that maintains the same view angle
+      const newCameraPos = new THREE.Vector3().addVectors(newTarget, offset);
+      
+      // Animate the transition
+      animateTransition(currentCameraPos, newCameraPos, currentTarget, newTarget);
+      
+      return true;
+    };
+    
+    // Animate camera transition smoothly
+    const animateTransition = (
+      startCameraPos: THREE.Vector3, 
+      endCameraPos: THREE.Vector3,
+      startTarget: THREE.Vector3,
+      endTarget: THREE.Vector3
+    ) => {
+      const duration = 1000; // ms
+      const startTime = Date.now();
+      
+      const animateCamera = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Use easing function for smooth transition
+        const easeProgress = easeOutCubic(progress);
+        
+        // Interpolate camera position
+        camera!.position.lerpVectors(startCameraPos, endCameraPos, easeProgress);
+        
+        // Interpolate target position
+        controls!.target.lerpVectors(startTarget, endTarget, easeProgress);
+        
+        // Update controls
+        controls!.update();
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+          requestAnimationFrame(animateCamera);
+        }
+      };
+      
+      animateCamera();
+    };
+    
+    // Easing function for smooth animation
+    const easeOutCubic = (t: number): number => {
+      return 1 - Math.pow(1 - t, 3);
+    };
+    
+    // Reset camera position to initial state
+    const resetCameraPosition = () => {
+      if (!camera || !controls || !originalCameraPosition || !originalOrbitTarget) return false;
+      
+      animateTransition(
+        camera.position.clone(),
+        originalCameraPosition.clone(),
+        controls.target.clone(),
+        originalOrbitTarget.clone()
+      );
+      
+      return true;
+    };
+
     return {
       containerRef,
       isWebGLSupported,
       addToScene,
       removeFromScene,
       addAnimationCallback,
-      removeAnimationCallback
+      removeAnimationCallback,
+      focusOnPosition,
+      resetCameraPosition
     };
   }
 });
