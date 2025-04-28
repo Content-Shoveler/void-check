@@ -28,16 +28,16 @@
         v-model="timeScale"
         :min="1"
         :max="7"
-        :step="1"
+        :step="0.1"
         label="Time Scale"
       />
     </div>
     
     <div v-if="selectedTask" class="task-details">
       <cyber-card>
-        <!-- <h5>{{ selectedTask.title }}</h5> -->
-        <!-- <p v-if="selectedTask.description">{{ selectedTask.description }}</p> -->
-        <h4 class="due-date">{{ formatDate(selectedTask.dueDate) }}</h4>
+        <h5>{{ selectedTask.title }}</h5>
+        <h5 class="due-date">{{ formatDate(selectedTask.dueDate) }}</h5>
+        <p v-if="selectedTask.description">{{ selectedTask.description }}</p>
         <!-- <div class="task-meta">
           <cyber-badge :type="selectedTask.priority">{{ selectedTask.priority }}</cyber-badge>
         </div> -->
@@ -293,9 +293,12 @@ export default defineComponent({
     const rings = ref<THREE.Mesh[]>([]);
     const calculateRingPositions = () => {
       if (!scene.value) return; // Ensure scene exists
-      
+
+      const ringCount = 7;
+      const ringGap = 5;
+
       // Define ring radii
-      const ringRadii = [7, 15, 25, 40, 60, 100, 150, 200];
+      const ringRadii = Array.from({ length: ringCount }, (_, i) => (i + 1) * ringGap);
       
       // Clear existing rings if any
       rings.value.forEach(ring => {
