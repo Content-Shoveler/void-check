@@ -289,7 +289,7 @@ export default defineComponent({
 
     // Setup rings
     const rings = ref<THREE.Mesh[]>([]);
-    const createRings = () => {
+    const calculateRingPositions = () => {
       if (!scene.value) return; // Ensure scene exists
       
       // Define ring radii
@@ -342,14 +342,14 @@ export default defineComponent({
     // Wait for scene to be ready before creating rings
     watch(() => scene.value, (newScene) => {
       if (newScene) {
-        createRings();
+        calculateRingPositions();
       }
     });
     
     // Watch for changes in time scale
     watch(timeScale, () => {
       calculateTaskPositions();
-      createRings();
+      calculateRingPositions();
       
       // Save to settings
       settingsStore.updateSettings({
