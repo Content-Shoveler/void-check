@@ -34,14 +34,13 @@ export function calculateRingPosition(size: number, timeScale: number, reference
 
 }
 export function calculateTaskPosition(task: Task, timeScale: number, referenceTime?: Date): TaskPosition {
-  // Current time as reference point
-  const now = referenceTime || new Date();
 
-  // Calculate time difference in milliseconds
+  const now = referenceTime || new Date();
   const dueDate = new Date(task.dueDate);
-  // console.log('dueDate', dueDate);
-  // console.log('now', now);
   const timeDifference = dueDate.getTime() - now.getTime();
+
+  // console.log('timeDifference', timeDifference);
+  // timeScale is 1 -7
 
   // Normalize the time scale (0-10) to a reasonable spread factor
   // Higher timeScale = more spread out tasks
@@ -57,7 +56,7 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
 
   // console.log('absTimeDifference', absTimeDifference);
 
-  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 5;
+  let orbitRadius = 8 + (absTimeDifference / dayInMs) * 2;
   // let orbitRadius = 5 * timeScale;
 
   // Apply time scale factor

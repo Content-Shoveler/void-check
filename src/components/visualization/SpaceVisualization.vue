@@ -172,7 +172,12 @@ export default defineComponent({
     
     // Combine active and recently completed tasks for display
     const tasksToShow = computed(() => {
-      return [...activeTasks.value, ...recentlyCompletedTasks.value];
+      const futureTasks = activeTasks.value.filter(task => {
+        const referenceTime = isLiveMode.value ? new Date() : customNowTime.value;
+        const dueDate = new Date(task.dueDate);
+        return dueDate > referenceTime;
+      });
+      return [...futureTasks, ...recentlyCompletedTasks.value];
     });
     
     // Task positions map
