@@ -76,8 +76,8 @@ import * as THREE from 'three';
 import { useRouter } from 'vue-router';
 import { useTasksStore } from '../../store/modules/tasks';
 import { useSettingsStore } from '../../store/modules/settings';
-import { calculateTaskPosition, avoidClusters, calculateRingPosition } from '../../utils/timeScaleUtils';
-import type { TaskPosition } from '../../utils/timeScaleUtils';
+import { calculateTaskPosition, avoidClusters, calculateRingPosition, timeConfig } from '../../utils/timeScaleUtils';
+import type { TaskPosition, TimeNotch } from '../../utils/timeScaleUtils';
 import type { Task } from '../../types';
 import SpaceRenderer from './SpaceRenderer.vue';
 import TaskEntity from './TaskEntity.vue';
@@ -300,12 +300,6 @@ export default defineComponent({
     const calculateRingPositions = () => {
       if (!scene.value) return; // Ensure scene exists
 
-      const ringCount = 7;
-      const ringGap = 5;
-
-      // Define ring radii
-      const ringRadii = Array.from({ length: ringCount }, (_, i) => (i + 1) * ringGap);
-      
       // Clear existing rings if any
       rings.value.forEach(ring => {
         scene.value?.remove(ring);
@@ -320,9 +314,12 @@ export default defineComponent({
         side: THREE.DoubleSide
       });
       
-      // Create all rings in a loop
-      ringRadii.forEach(radius => {
-        const ringPosition = calculateRingPosition(radius, timeScale.value, customNowTime.value);
+      // Create rings based on time periods from the unified configuration
+      // We'll create a ring for each time period: hour, day, week, month, quarter, year
+      const timeKeys = Object.keys(timeConfig);
+      timeKeys.forEach((key, index) => {
+        // Use key index as the size parameter for ring positioning
+        const ringPosition = calculateRingPosition(index + 1, timeScale.value);
         const ringGeometry = new THREE.RingGeometry(...ringPosition);
         const ring = new THREE.Mesh(ringGeometry, ringMaterial);
         
