@@ -17,8 +17,7 @@ export type RingPostion = [number, number, number];
 // Unified time configuration for both tasks and rings positioning
 export interface TimeNotch {
   label: string;
-  start: number;
-  end: number;
+  boundary: number;
   ms: number;
 }
 
@@ -30,41 +29,38 @@ export interface TimeConfig {
 export const timeConfig: TimeConfig = {
   'hour': {
     label: 'hour',
-    start: 1,
-    end: 4,
+    boundary: 4,
     ms: 60 * 60 * 1000
   },
   'day': {
     label: 'day',
-    start: 8,
-    end: 10,
+    boundary: 10,
     ms: 24 * 60 * 60 * 1000
   },
   'week': {
     label: 'week',
-    start: 15,
-    end: 20,
+    boundary: 20,
     ms: 7 * 24 * 60 * 60 * 1000
   },
   'month': {
     label: 'month',
-    start: 25,
-    end: 50,
+    boundary: 50,
     ms: 30 * 24 * 60 * 60 * 1000
   },
   'quarter': {
     label: 'quarter',
-    start: 40,
-    end: 100,
+    boundary: 100,
     ms: 3 * 30 * 24 * 60 * 60 * 1000
   },
   'year': {
     label: 'year',
-    start: 50,
-    end: 100,
+    boundary: 100,
     ms: 365 * 24 * 60 * 60 * 1000
-  }
+  },
 };
+
+// List of time periods in order for reference
+export const timePeriodsInOrder = ['hour', 'day', 'week', 'month', 'quarter', 'year'];
 
 /**
  * Calculate ring position and dimensions based on time period and scale
@@ -95,7 +91,7 @@ export function calculateRingPosition(size: number, timeScale: number, reference
   // Use the time notch values to determine ring size
   // This aligns with the task positioning logic
   const scaleFactor = timeScale + 0.5;
-  const innerRadius = timeNotch.end * scaleFactor;
+  const innerRadius = timeNotch.boundary * scaleFactor;
   const outerRadius = innerRadius + 0.5;
   
   return [
@@ -122,10 +118,15 @@ export function calculateTaskPosition(task: Task, timeScale: number, referenceTi
   let orbitRadius = 0;
 
   // Using the shared timeConfig to calculate the orbit radius
-  for (const key in timeConfig) {
+  for (let i = 0; i < timePeriodsInOrder.length; i++) {
+    const key = timePeriodsInOrder[i];
     const notch = timeConfig[key];
     if (timeDifference < notch.ms) {
-      orbitRadius = notch.start + (notch.end - notch.start) * (timeDifference / notch.ms);
+      // Get start value (previous boundary or 1 if this is the first period)
+      const startValue = i === 0 ? 1 : timeConfig[timePeriodsInOrder[i - 1]].boundary;
+      
+      // Calculate orbital radius using the start value and current boundary
+      orbitRadius = startValue + (notch.boundary - startValue) * (timeDifference / notch.ms);
       orbitRadius = orbitRadius * (timeScale + 0.5);
       break;
     } 
