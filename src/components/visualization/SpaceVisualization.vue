@@ -27,7 +27,7 @@
       <cyber-slider
         v-model="timeScale"
         :min="1"
-        :max="7"
+        :max="10"
         :step="0.1"
         label="Focus"
       />
