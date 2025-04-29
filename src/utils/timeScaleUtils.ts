@@ -29,32 +29,32 @@ export interface TimeConfig {
 export const timeConfig: TimeConfig = {
   'hour': {
     label: 'hour',
-    boundary: 4,
+    boundary: 5,
     ms: 60 * 60 * 1000
   },
   'day': {
     label: 'day',
-    boundary: 10,
+    boundary: 15,
     ms: 24 * 60 * 60 * 1000
   },
   'week': {
     label: 'week',
-    boundary: 20,
+    boundary: 30,
     ms: 7 * 24 * 60 * 60 * 1000
   },
   'month': {
     label: 'month',
-    boundary: 50,
+    boundary: 60,
     ms: 30 * 24 * 60 * 60 * 1000
   },
   'quarter': {
     label: 'quarter',
-    boundary: 100,
+    boundary: 110,
     ms: 3 * 30 * 24 * 60 * 60 * 1000
   },
   'year': {
     label: 'year',
-    boundary: 100,
+    boundary: 200,
     ms: 365 * 24 * 60 * 60 * 1000
   },
 };
