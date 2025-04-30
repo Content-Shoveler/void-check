@@ -63,62 +63,88 @@ export default defineComponent({
       return priorityColors[props.task.priority] || priorityColors['medium'];
     });
     
-    // Helper function to create Saturn-style rings
+    // Create Saturn-style rings
     const createSaturnRings = (planetRadius: number) => {
-      const ringGeometry = new THREE.RingGeometry(planetRadius * 1.4, planetRadius * 2.2);
-      const ringMaterial = new THREE.MeshStandardMaterial({
-        color: 0xFFF0D0,
-        emissive: 0xFFF0D0,
-        emissiveIntensity: 0.2,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8,
-      });
+      const ringGroup = new THREE.Object3D();
       
-      const rings = new THREE.Mesh(ringGeometry, ringMaterial);
-      // Rotate rings to be horizontal
-      rings.rotation.x = Math.PI / 2;
-      return rings;
-    };
-    
-    // Helper function to create Jupiter-style moons
-    const createJupiterMoons = (planetRadius: number) => {
-      const moons: THREE.Mesh[] = [];
-      const moonCount = 4;
+      // Create multiple ring layers for more depth and realism
+      const ringLayers = [
+        { inner: 1.3, outer: 1.7, opacity: 0.6, color: 0xFFE0A0 },
+        { inner: 1.75, outer: 2.2, opacity: 0.4, color: 0xFFF0D0 }
+      ];
       
-      for (let i = 0; i < moonCount; i++) {
-        // Create moon geometry - vary size slightly
-        const moonSize = 0.2 + (Math.random() * 0.15);
-        const moonGeometry = new THREE.SphereGeometry(moonSize);
+      ringLayers.forEach(layer => {
+        const ringGeometry = new THREE.RingGeometry(
+          planetRadius * layer.inner, 
+          planetRadius * layer.outer
+        );
         
-        // Create moon material - grayish
-        const moonColor = new THREE.Color(0.8 + Math.random() * 0.2, 0.8 + Math.random() * 0.2, 0.8 + Math.random() * 0.2);
-        const moonMaterial = new THREE.MeshStandardMaterial({
-          color: moonColor,
-          roughness: 0.7,
-          metalness: 0.1,
+        const ringMaterial = new THREE.MeshStandardMaterial({
+          color: layer.color,
+          transparent: true,
+          opacity: layer.opacity,
+          side: THREE.DoubleSide
         });
         
-        // Create moon mesh
-        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2; // Align horizontally
         
-        // Position moon in orbit around the planet
+        // Store custom data for animation
+        ring.userData = { isRing: true };
+        
+        ringGroup.add(ring);
+      });
+      
+      return ringGroup;
+    };
+    
+    // Create Jupiter-style moons
+    const createJupiterMoons = (planetRadius: number) => {
+      const moons = [];
+      const moonCount = 4;
+      
+      // Moon variations - each with distinct characteristics
+      const moonTypes = [
+        { radius: 0.25, color: 0xCCCCCC }, // Ganymede - larger, gray
+        { radius: 0.2, color: 0xFFEEDD },  // Europa - icy white
+        { radius: 0.22, color: 0xFFDDAA }, // Io - yellowish
+        { radius: 0.23, color: 0xDDDDDD }  // Callisto - gray
+      ];
+      
+      for (let i = 0; i < moonCount; i++) {
+        const moonType = moonTypes[i % moonTypes.length];
+        const moonGroup = new THREE.Object3D();
+        
+        // Create moon
+        const moonGeometry = new THREE.SphereGeometry(moonType.radius);
+        const moonMaterial = new THREE.MeshStandardMaterial({
+          color: moonType.color,
+          roughness: 0.7,
+          metalness: 0.1
+        });
+        
+        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        moonGroup.add(moon);
+        
+        // Create unique orbital path for each moon
         const orbitRadius = planetRadius * (2.0 + i * 0.5);
         const angle = Math.random() * Math.PI * 2;
-        moon.position.set(
+        
+        moonGroup.position.set(
           Math.cos(angle) * orbitRadius,
-          (Math.random() - 0.5) * 0.5, // slight vertical variation
+          (Math.random() - 0.5) * 0.5, // Slight vertical variation
           Math.sin(angle) * orbitRadius
         );
         
-        // Store orbit data directly on the moon's userData
-        moon.userData = {
+        // Store orbital data for animation
+        moonGroup.userData = {
           orbitRadius,
-          orbitSpeed: 0.001 - (i * 0.0001), // each moon has different speed
-          orbitAngle: angle
+          orbitSpeed: 0.0005 - (i * 0.0001), // Each moon has different speed
+          orbitAngle: angle,
+          rotationSpeed: 0.001
         };
         
-        moons.push(moon);
+        moons.push(moonGroup);
       }
       
       return moons;
@@ -128,113 +154,200 @@ export default defineComponent({
     const createTaskMesh = () => {
       if (!props.scene) return;
       
-      // Create geometry based on task priority - using more planet-like shapes
-      let geometry: THREE.BufferGeometry;
-      let material: THREE.Material;
       let taskObject: THREE.Object3D;
       
       switch (props.task.priority) {
         case 'low':
-          // Mercury/Mars style rocky planet for low priority
-          geometry = new THREE.SphereGeometry(1.2);
-          material = new THREE.MeshStandardMaterial({
+          // Mercury/Mars style rocky planet (small, cratered)
+          const lowPriorityGroup = new THREE.Object3D();
+          
+          // Create base planet with detailed geometry for rocky appearance
+          const rockyGeometry = new THREE.IcosahedronGeometry(1.2, 3);
+          const rockyMaterial = new THREE.MeshStandardMaterial({
             color: getTaskColor.value,
             emissive: getTaskColor.value,
-            emissiveIntensity: props.task.completed ? 0.1 : 0.3,
+            emissiveIntensity: 0.15,
             metalness: 0.2,
             roughness: 0.9, // Very rough for rocky appearance
-            transparent: true,
-            opacity: props.task.completed ? 0.5 : 1
+            flatShading: true
           });
           
-          // Create mesh and add craters/bumps
-          taskObject = new THREE.Mesh(geometry, material);
+          const rockyPlanet = new THREE.Mesh(rockyGeometry, rockyMaterial);
+          lowPriorityGroup.add(rockyPlanet);
+          
+          // Add subtle atmospheric haze for Mars-like feel
+          const hazeGeometry = new THREE.SphereGeometry(1.3);
+          const hazeMaterial = new THREE.MeshBasicMaterial({
+            color: getTaskColor.value,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide
+          });
+          
+          const haze = new THREE.Mesh(hazeGeometry, hazeMaterial);
+          lowPriorityGroup.add(haze);
+          
+          taskObject = lowPriorityGroup;
           break;
           
         case 'medium':
-          // Earth-like planet for medium priority
-          geometry = new THREE.SphereGeometry(1.4);
-          material = new THREE.MeshStandardMaterial({
+          // Earth-like planet with atmosphere and clouds
+          const mediumPriorityGroup = new THREE.Object3D();
+          
+          // Planet base
+          const earthGeometry = new THREE.SphereGeometry(1.4, 32, 32);
+          const earthMaterial = new THREE.MeshStandardMaterial({
             color: getTaskColor.value,
             emissive: getTaskColor.value,
-            emissiveIntensity: props.task.completed ? 0.1 : 0.3,
+            emissiveIntensity: 0.1,
             metalness: 0.1,
-            roughness: 0.5, // Smoother for earth-like appearance
-            transparent: true,
-            opacity: props.task.completed ? 0.5 : 1
+            roughness: 0.5
           });
           
-          // Create mesh
-          taskObject = new THREE.Mesh(geometry, material);
+          const earthPlanet = new THREE.Mesh(earthGeometry, earthMaterial);
+          mediumPriorityGroup.add(earthPlanet);
+          
+          // Cloud layer
+          const cloudGeometry = new THREE.SphereGeometry(1.44);
+          const cloudMaterial = new THREE.MeshStandardMaterial({
+            color: 0xFFFFFF,
+            transparent: true,
+            opacity: 0.4
+          });
+          
+          const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+          clouds.userData = { isCloud: true, rotationSpeed: 0.0001 };
+          mediumPriorityGroup.add(clouds);
+          
+          // Atmosphere glow
+          const glowGeometry = new THREE.SphereGeometry(1.6);
+          const glowMaterial = new THREE.MeshBasicMaterial({
+            color: getTaskColor.value,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide
+          });
+          
+          const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+          mediumPriorityGroup.add(glow);
+          
+          taskObject = mediumPriorityGroup;
           break;
           
         case 'high':
-          // Saturn style planet with rings for high priority
-          geometry = new THREE.SphereGeometry(1.6);
-          material = new THREE.MeshStandardMaterial({
+          // Saturn-style planet with impressive ring system
+          const highPriorityGroup = new THREE.Object3D();
+          
+          // Create planet
+          const saturnGeometry = new THREE.SphereGeometry(1.6, 32, 32);
+          const saturnMaterial = new THREE.MeshStandardMaterial({
             color: getTaskColor.value,
             emissive: getTaskColor.value,
-            emissiveIntensity: props.task.completed ? 0.1 : 0.3,
+            emissiveIntensity: 0.2,
             metalness: 0.3,
-            roughness: 0.7,
-            transparent: true,
-            opacity: props.task.completed ? 0.5 : 1
+            roughness: 0.6
           });
           
-          // Create planet mesh
-          const saturnPlanet = new THREE.Mesh(geometry, material);
+          const saturnPlanet = new THREE.Mesh(saturnGeometry, saturnMaterial);
+          highPriorityGroup.add(saturnPlanet);
           
-          // Create rings
+          // Create advanced ring system
           const rings = createSaturnRings(1.6);
+          highPriorityGroup.add(rings);
           
-          // Create a group to hold both planet and rings
-          const saturnGroup = new THREE.Object3D();
-          saturnGroup.add(saturnPlanet);
-          saturnGroup.add(rings);
+          // Add subtle glow effect
+          const saturnGlowGeometry = new THREE.SphereGeometry(1.7);
+          const saturnGlowMaterial = new THREE.MeshBasicMaterial({
+            color: getTaskColor.value,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide
+          });
           
-          taskObject = saturnGroup;
+          const saturnGlow = new THREE.Mesh(saturnGlowGeometry, saturnGlowMaterial);
+          highPriorityGroup.add(saturnGlow);
+          
+          taskObject = highPriorityGroup;
           break;
           
         case 'critical':
-          // Jupiter style planet with moons for critical priority
-          geometry = new THREE.SphereGeometry(2.0);
-          material = new THREE.MeshStandardMaterial({
+          // Jupiter-style massive gas giant with orbiting moons
+          const criticalPriorityGroup = new THREE.Object3D();
+          
+          // Create the main Jupiter planet - banded gas giant
+          const jupiterGeometry = new THREE.SphereGeometry(2.0, 48, 48);
+          const jupiterMaterial = new THREE.MeshStandardMaterial({
             color: getTaskColor.value,
             emissive: getTaskColor.value,
-            emissiveIntensity: props.task.completed ? 0.1 : 0.3,
-            metalness: 0.4,
-            roughness: 0.6,
-            transparent: true,
-            opacity: props.task.completed ? 0.5 : 1
+            emissiveIntensity: 0.25,
+            metalness: 0.3,
+            roughness: 0.4
           });
           
-          // Create planet mesh
-          const jupiterPlanet = new THREE.Mesh(geometry, material);
+          const jupiterPlanet = new THREE.Mesh(jupiterGeometry, jupiterMaterial);
+          criticalPriorityGroup.add(jupiterPlanet);
           
-          // Create moons
+          // Create bands effect - additional spheres with patterns
+          // Great Red Spot - iconic Jupiter feature
+          const spotGeometry = new THREE.SphereGeometry(2.01); 
+          const spotMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFF2222,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.FrontSide,
+            alphaTest: 0.1
+          });
+          
+          // Create partial sphere for the spot by using clipping planes
+          const spotPlane1 = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1.9);
+          const spotPlane2 = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.9);
+          const spotPlane3 = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1.9);
+          const spotPlane4 = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1.9);
+          
+          spotMaterial.clippingPlanes = [spotPlane1, spotPlane2, spotPlane3, spotPlane4];
+          
+          const redSpot = new THREE.Mesh(spotGeometry, spotMaterial);
+          redSpot.rotation.z = Math.PI / 4;
+          criticalPriorityGroup.add(redSpot);
+          
+          // Create atmospheric glow
+          const jupiterGlowGeometry = new THREE.SphereGeometry(2.1);
+          const jupiterGlowMaterial = new THREE.MeshBasicMaterial({
+            color: getTaskColor.value,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide
+          });
+          
+          const jupiterGlow = new THREE.Mesh(jupiterGlowGeometry, jupiterGlowMaterial);
+          criticalPriorityGroup.add(jupiterGlow);
+          
+          // Add several moons
           const moons = createJupiterMoons(2.0);
+          moons.forEach(moon => {
+            criticalPriorityGroup.add(moon);
+          });
           
-          // Create a group to hold planet and moons
-          const jupiterGroup = new THREE.Object3D();
-          jupiterGroup.add(jupiterPlanet);
-          moons.forEach(moon => jupiterGroup.add(moon));
-          
-          taskObject = jupiterGroup;
+          taskObject = criticalPriorityGroup;
           break;
           
         default:
-          // Default to a simple planet
-          geometry = new THREE.SphereGeometry(1.4);
-          material = new THREE.MeshStandardMaterial({
+          // Default planet with basic features
+          const defaultGroup = new THREE.Object3D();
+          
+          const defaultGeometry = new THREE.SphereGeometry(1.4);
+          const defaultMaterial = new THREE.MeshStandardMaterial({
             color: getTaskColor.value,
             emissive: getTaskColor.value,
-            emissiveIntensity: props.task.completed ? 0.1 : 0.3,
-            metalness: 0.3,
-            roughness: 0.5,
-            transparent: true,
-            opacity: props.task.completed ? 0.5 : 1
+            emissiveIntensity: 0.2,
+            metalness: 0.2,
+            roughness: 0.5
           });
-          taskObject = new THREE.Mesh(geometry, material);
+          
+          const defaultPlanet = new THREE.Mesh(defaultGeometry, defaultMaterial);
+          defaultGroup.add(defaultPlanet);
+          
+          taskObject = defaultGroup;
       }
       
       // Set position from props
@@ -246,8 +359,8 @@ export default defineComponent({
       
       // Store reference to the task object
       taskObjectRef.value = taskObject;
-      if (taskObject instanceof THREE.Mesh) {
-        mesh.value = taskObject;
+      if (taskObject.children[0] instanceof THREE.Mesh) {
+        mesh.value = taskObject.children[0];
       }
       
       // Add orbital animations to object
@@ -258,39 +371,49 @@ export default defineComponent({
         const idHash = props.task.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
         const rotationSpeed = 0.0001 + (idHash % 10) * 0.00002;
         
-        // Planet rotation animation
-        if (taskObject instanceof THREE.Mesh) {
-          // Simple planet rotation
-          taskObject.rotation.y += rotationSpeed * 1.2;
-          taskObject.rotation.z += rotationSpeed * 0.3;
-        } else {
-          // For groups (Saturn and Jupiter), rotate the planet (first child)
-          if (taskObject.children && taskObject.children.length > 0) {
-            const planet = taskObject.children[0];
-            if (planet) {
-              planet.rotation.y += rotationSpeed * 1.2;
+        // Handle different object types and animations
+        taskObject.children.forEach((child, index) => {
+          if (child instanceof THREE.Mesh) {
+            // Handle special case for clouds - rotate differently
+            if (child.userData && child.userData.isCloud) {
+              child.rotation.y += child.userData.rotationSpeed || 0.0001;
+              return;
             }
             
-            // For Jupiter, animate the moons
-            if (props.task.priority === 'critical' && taskObject.children.length > 1) {
-              // Skip the first child (the planet itself)
-              for (let i = 1; i < taskObject.children.length; i++) {
-                const moon = taskObject.children[i];
-                if (moon && moon.userData) {
-                  // Update the moon's orbit position
-                  moon.userData.orbitAngle += moon.userData.orbitSpeed;
-                  moon.position.x = Math.cos(moon.userData.orbitAngle) * moon.userData.orbitRadius;
-                  moon.position.z = Math.sin(moon.userData.orbitAngle) * moon.userData.orbitRadius;
-                  
-                  // Rotate the moon itself
-                  if (moon.rotation) {
-                    moon.rotation.y += rotationSpeed * 2;
-                  }
-                }
+            // Main planet rotation - different for each type
+            if (index === 0) { // First child is always the main planet
+              child.rotation.y += rotationSpeed * 1.2;
+              
+              // Add variety to rotation based on planet type
+              if (props.task.priority === 'low') {
+                child.rotation.z += rotationSpeed * 0.2;
+              } else if (props.task.priority === 'medium') {
+                child.rotation.x += rotationSpeed * 0.1;
+              } else if (props.task.priority === 'critical') {
+                // Jupiter-like fast equatorial rotation
+                child.rotation.y += rotationSpeed * 0.3;
               }
             }
+            
+            // Handle Saturn rings rotation
+            if (child.userData && child.userData.isRing) {
+              // Rings rotate slightly differently than the planet
+              child.rotation.z += rotationSpeed * 0.05;
+            }
+          } else if (child instanceof THREE.Object3D && child.userData && child.userData.orbitRadius) {
+            // This is a moon - update its orbit
+            child.userData.orbitAngle += child.userData.orbitSpeed;
+            
+            // Update moon position in orbit
+            child.position.x = Math.cos(child.userData.orbitAngle) * child.userData.orbitRadius;
+            child.position.z = Math.sin(child.userData.orbitAngle) * child.userData.orbitRadius;
+            
+            // Rotate moon itself
+            if (child.children[0]) {
+              child.children[0].rotation.y += child.userData.rotationSpeed;
+            }
           }
-        }
+        });
         
         // Add subtle "bobbing" up and down motion for solar system feel
         taskObject.position.y = props.position.y + Math.sin(time * 0.001 + idHash) * 0.15;
@@ -327,8 +450,8 @@ export default defineComponent({
         // Update the raycaster
         raycaster.setFromCamera(mouse, props.camera);
         
-        // Check for intersections
-        const intersects = raycaster.intersectObject(taskObject);
+        // Check for intersections with the entire task object and its children
+        const intersects = raycaster.intersectObjects(taskObject.children, true);
         
         if (intersects.length > 0) {
           emit(eventType, props.task.id);
@@ -360,34 +483,22 @@ export default defineComponent({
           if (taskObject && props.scene) {
             props.scene.remove(taskObject);
             
-            // Handle cleanup based on object type
-            if (taskObject instanceof THREE.Mesh) {
-              if (taskObject.geometry) {
-                taskObject.geometry.dispose();
-              }
-              
-              if (taskObject.material) {
-                if (Array.isArray(taskObject.material)) {
-                  taskObject.material.forEach((m: THREE.Material) => m.dispose());
-                } else {
-                  taskObject.material.dispose();
+            // Dispose of all geometries and materials
+            taskObject.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                  child.geometry.dispose();
                 }
-              }
-            } else {
-              // Handle group cleanup
-              taskObject.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
-                  if (child.geometry) child.geometry.dispose();
-                  if (child.material) {
-                    if (Array.isArray(child.material)) {
-                      child.material.forEach((m: THREE.Material) => m.dispose());
-                    } else {
-                      child.material.dispose();
-                    }
+                
+                if (child.material) {
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                  } else {
+                    child.material.dispose();
                   }
                 }
-              });
-            }
+              }
+            });
           }
         }
       ];
@@ -421,32 +532,23 @@ export default defineComponent({
     watch(
       () => props.selected,
       (isSelected) => {
-        const taskObject = taskObjectRef.value;
+        if (!taskObjectRef.value) return;
         
-        if (taskObject) {
-          // Apply scale to the entire object
-          taskObject.scale.set(
-            isSelected ? 1.2 : 1,
-            isSelected ? 1.2 : 1,
-            isSelected ? 1.2 : 1
-          );
-          
-          // If it's a mesh, update its material
-          if (taskObject instanceof THREE.Mesh && taskObject.material instanceof THREE.Material) {
-            if ('emissiveIntensity' in taskObject.material) {
-              taskObject.material.emissiveIntensity = isSelected ? 0.8 : (props.task.completed ? 0.2 : 0.5);
-            }
-          } 
-          // If it's a group (Saturn or Jupiter), update the planet's material
-          else if (taskObject.children && taskObject.children.length > 0) {
-            const planetMesh = taskObject.children[0];
-            if (planetMesh instanceof THREE.Mesh && planetMesh.material instanceof THREE.Material) {
-              if ('emissiveIntensity' in planetMesh.material) {
-                planetMesh.material.emissiveIntensity = isSelected ? 0.8 : (props.task.completed ? 0.2 : 0.5);
-              }
-            }
+        // Scale the entire object for selection effect
+        taskObjectRef.value.scale.set(
+          isSelected ? 1.2 : 1,
+          isSelected ? 1.2 : 1,
+          isSelected ? 1.2 : 1
+        );
+        
+        // Update materials for all meshes
+        taskObjectRef.value.traverse((child) => {
+          if (child instanceof THREE.Mesh && 
+              child.material instanceof THREE.Material && 
+              'emissiveIntensity' in child.material) {
+            child.material.emissiveIntensity = isSelected ? 0.8 : (props.task.completed ? 0.2 : 0.4);
           }
-        }
+        });
       }
     );
     
@@ -454,34 +556,20 @@ export default defineComponent({
     watch(
       () => props.task.completed,
       (isCompleted) => {
-        const taskObject = taskObjectRef.value;
+        if (!taskObjectRef.value) return;
         
-        if (taskObject) {
-          // If it's a mesh, update its material
-          if (taskObject instanceof THREE.Mesh && taskObject.material instanceof THREE.Material) {
-            if ('opacity' in taskObject.material) {
-              taskObject.material.opacity = isCompleted ? 0.5 : 1;
+        // Update all materials
+        taskObjectRef.value.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+            if ('opacity' in child.material) {
+              child.material.opacity = isCompleted ? 0.5 : 1;
             }
-            if ('emissiveIntensity' in taskObject.material) {
-              taskObject.material.emissiveIntensity = props.selected ? 0.8 : (isCompleted ? 0.2 : 0.5);
+            
+            if ('emissiveIntensity' in child.material) {
+              child.material.emissiveIntensity = props.selected ? 0.8 : (isCompleted ? 0.2 : 0.4);
             }
-          } 
-          // If it's a group (Saturn or Jupiter), update all materials
-          else if (taskObject.children && taskObject.children.length > 0) {
-            taskObject.traverse((child) => {
-              if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
-                if ('opacity' in child.material) {
-                  child.material.opacity = isCompleted ? 0.5 : (child.material.opacity === 0.8 ? 0.8 : 1);
-                }
-                
-                // Only adjust emissive for the main planet (first child)
-                if (child === taskObject.children[0] && 'emissiveIntensity' in child.material) {
-                  child.material.emissiveIntensity = props.selected ? 0.8 : (isCompleted ? 0.2 : 0.5);
-                }
-              }
-            });
           }
-        }
+        });
       }
     );
     
