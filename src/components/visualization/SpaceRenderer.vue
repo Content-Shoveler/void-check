@@ -191,99 +191,300 @@ export default defineComponent({
       return true;
     };
     
-    // Create center marker representing current time ("sun")
+    // Create center marker representing current time ("black hole")
     const createCenterTimeMarker = () => {
       if (!scene) return;
       
-      // Create a larger, sun-like sphere to represent the current time center point
-      const geometry = new THREE.SphereGeometry(2, 32, 32);
+      // Create the black hole event horizon (dark center)
+      const geometry = new THREE.SphereGeometry(2, 64, 64);
       
-      // Create custom shader material with sun-like gradient and glow
+      // Advanced shader for black hole event horizon with blue energy accents
       const material = new THREE.ShaderMaterial({
         uniforms: {
-          colorA: { value: new THREE.Color(0xFFAA00) }, // Warm sun-like center color
-          colorB: { value: new THREE.Color(0xFF5500) }, // Outer sun color
-          time: { value: 0.0 }
+          time: { value: 0.0 },
+          intensity: { value: 0.8 }
         },
         vertexShader: `
           varying vec2 vUv;
+          varying vec3 vPosition;
           
           void main() {
             vUv = uv;
+            vPosition = position;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
           }
         `,
         fragmentShader: `
-          uniform vec3 colorA;
-          uniform vec3 colorB;
           uniform float time;
+          uniform float intensity;
           varying vec2 vUv;
+          varying vec3 vPosition;
+          
+          float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+          }
           
           void main() {
-            // Create animated gradient effect
-            vec3 color = mix(colorA, colorB, vUv.y + sin(time * 0.001) * 0.2);
+            // Calculate distance from center
+            float dist = length(vUv - 0.5) * 2.0;
             
-            // Add glow effect 
-            float intensity = 1.0 - 2.0 * length(vUv - 0.5);
-            intensity = pow(intensity, 1.5);
+            // Create pulsing event horizon effect
+            float edgePulse = smoothstep(0.7, 1.0, dist) * sin(time * 0.003) * 0.2;
             
-            gl_FragColor = vec4(color, 0.8 * intensity);
+            // Add subtle blue energy accents
+            vec3 blueEnergy = vec3(0.0, 0.2, 0.5) * (1.0 - dist) * 0.8;
+            
+            // Create void/darkness
+            vec3 color = mix(vec3(0.0, 0.0, 0.0), blueEnergy, edgePulse + 0.1);
+            
+            // Create gravitational lensing effect around the edge
+            float lensStrength = smoothstep(0.8, 1.0, dist) * 0.6;
+            
+            // Create flickering stars/energy at the event horizon
+            float flicker = random(vUv + vec2(time * 0.001, 0.0)) * smoothstep(0.8, 0.95, dist);
+            
+            // Add subtle swirling energy patterns
+            float swirl = sin(atan(vPosition.x, vPosition.z) * 8.0 + time * 0.002) * 0.5 + 0.5;
+            swirl *= smoothstep(0.6, 0.9, dist) * 0.3;
+            
+            // Combine all effects
+            color += vec3(0.2, 0.4, 1.0) * (swirl + flicker * 0.5) * lensStrength;
+            
+            // Apply extreme darkness in center
+            float center = 1.0 - smoothstep(0.0, 0.7, dist);
+            color = mix(color, vec3(0.0), center * 0.95);
+            
+            // Adjust opacity for event horizon effect
+            float alpha = intensity * (0.9 - (center * 0.4));
+            
+            gl_FragColor = vec4(color, alpha);
           }
         `,
-        transparent: true
+        transparent: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
       });
       
       // Create mesh and add to scene
-      const centerMarker = new THREE.Mesh(geometry, material);
-      centerMarker.position.set(0, 0, 0);
-      scene.add(centerMarker);
+      const blackHole = new THREE.Mesh(geometry, material);
+      blackHole.position.set(0, 0, 0);
+      scene.add(blackHole);
       
       // Add pulsing effect animation
       animationCallbacks.push((time) => {
-        if (centerMarker && material.uniforms) {
+        if (blackHole && material.uniforms) {
           // Update time uniform for shader animation
           material.uniforms.time.value = time;
           
-          // Add subtle size pulsing
-          // const pulse = 1.0 + Math.sin(time * 0.002) * 0.05;
-          // centerMarker.scale.set(pulse, pulse, pulse);
+          // Subtle size variations
+          const pulse = 1.0 + Math.sin(time * 0.001) * 0.02;
+          blackHole.scale.set(pulse, pulse, pulse);
         }
       });
       
-      // Create corona effect with particles around the sun
-      const particleCount = 50;
+      // Create accretion disk (the glowing swirling matter around the black hole)
+      const diskGeometry = new THREE.RingGeometry(2.2, 8, 128, 8);
+      
+      // Apply warping to create disk curvature
+      const diskPositions = diskGeometry.attributes.position.array;
+      for (let i = 0; i < diskPositions.length; i += 3) {
+        const x = diskPositions[i];
+        const y = diskPositions[i + 1];
+        const z = diskPositions[i + 2];
+        
+        // Calculate distance from center
+        const distance = Math.sqrt(x * x + z * z);
+        
+        // Apply warping based on distance
+        diskPositions[i + 1] = Math.sin((distance - 2.2) * 0.5) * 0.5;
+      }
+      
+      // Create advanced shader for accretion disk
+      const diskMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          time: { value: 0.0 }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          varying float vDistance;
+          
+          void main() {
+            vUv = uv;
+            
+            // Calculate distance from center for coloring
+            vDistance = length(position.xz) / 8.0;
+            
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float time;
+          varying vec2 vUv;
+          varying float vDistance;
+          
+          void main() {
+            // Create swirling effect based on angle
+            float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
+            
+            // Animate rotation over time
+            float swirl = sin(angle * 10.0 + time * 0.004 - vDistance * 15.0) * 0.5 + 0.5;
+            
+            // Distance-based coloring (hotter near center)
+            float innerGlow = (1.0 - vDistance) * 2.0;
+            
+            // Set base colors
+            vec3 hotColor = vec3(1.0, 0.5, 0.1);  // Orange-red near center
+            vec3 coolColor = vec3(0.1, 0.3, 0.6); // Blue-purple at edges
+            
+            // Create plasma-like effect
+            vec3 color = mix(hotColor, coolColor, vDistance);
+            
+            // Add swirling intensity variations
+            color *= 0.8 + swirl * 0.7;
+            
+            // Make disk fade based on distance
+            float alpha = smoothstep(1.0, 0.2, vDistance) * (0.6 + swirl * 0.4);
+            
+            gl_FragColor = vec4(color, alpha);
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      
+      const accretionDisk = new THREE.Mesh(diskGeometry, diskMaterial);
+      accretionDisk.rotation.x = Math.PI / 2; // Make disk horizontal
+      scene.add(accretionDisk);
+      
+      // Add animation to the accretion disk
+      animationCallbacks.push((time) => {
+        if (accretionDisk && diskMaterial.uniforms) {
+          // Update time uniform for animation
+          diskMaterial.uniforms.time.value = time;
+          
+          // Add slow rotation
+          accretionDisk.rotation.z = time * 0.0001;
+        }
+      });
+      
+      // Create particles being drawn into the black hole
+      const particleCount = 200;
       const particlesGeometry = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
+      const particleSizes = new Float32Array(particleCount);
+      const particleColors = new Float32Array(particleCount * 3);
+      const particleData = new Float32Array(particleCount * 3); // Speed, initial radius, angle
       
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        const radius = 2 + Math.random();
+        // Start particles at random positions in a larger radius around the black hole
+        const radius = 3 + Math.random() * 8;
         const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
+        const phi = (Math.random() - 0.5) * 0.2 + Math.PI / 2; // Keep close to the accretion disk plane
         
         particlePositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-        particlePositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-        particlePositions[i3 + 2] = radius * Math.cos(phi);
+        particlePositions[i3 + 1] = radius * Math.cos(phi);
+        particlePositions[i3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+        
+        // Store data for animation
+        particleData[i3] = 0.2 + Math.random() * 0.8; // Speed
+        particleData[i3 + 1] = radius; // Initial radius
+        particleData[i3 + 2] = theta; // Initial angle
+        
+        // Size based on distance (larger near center)
+        particleSizes[i] = 0.3 + Math.random() * 0.7;
+        
+        // Colors based on distance (bluer far away, redder near center)
+        const distRatio = radius / 10;
+        particleColors[i3] = Math.min(1.0, 1.2 - distRatio * 0.5); // Red
+        particleColors[i3 + 1] = Math.min(1.0, 0.5 - distRatio * 0.2); // Green
+        particleColors[i3 + 2] = Math.min(1.0, 1.0 - distRatio * 0.5); // Blue
       }
       
       particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      particlesGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+      particlesGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
       
       const particlesMaterial = new THREE.PointsMaterial({
-        size: 0.8,
-        color: 0xFFAA00,
+        size: 0.5,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.8,
         blending: THREE.AdditiveBlending
       });
       
       const particles = new THREE.Points(particlesGeometry, particlesMaterial);
       scene.add(particles);
       
-      // Add subtle rotation to particles
+      // Add particle animation (being drawn into the black hole)
       animationCallbacks.push((time) => {
         if (particles) {
-          particles.rotation.y = time * 0.0003;
-          particles.rotation.x = time * 0.0002;
+          const positions = particlesGeometry.attributes.position.array;
+          const sizes = particlesGeometry.attributes.size.array;
+          const colors = particlesGeometry.attributes.color.array;
+          
+          for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            
+            // Get current position
+            let x = positions[i3];
+            let y = positions[i3 + 1];
+            let z = positions[i3 + 2];
+            
+            // Calculate current distance from center
+            const distSq = x * x + y * y + z * z;
+            const dist = Math.sqrt(distSq);
+            
+            // Direction vector toward black hole
+            const dx = -x / dist;
+            const dy = -y / dist;
+            const dz = -z / dist;
+            
+            // Compute gravitational force (stronger when closer)
+            const force = 0.05 / Math.max(0.5, dist); 
+            const speed = particleData[i3];
+            
+            // Update position (moving toward black hole, faster when closer)
+            positions[i3] += dx * force * speed;
+            positions[i3 + 1] += dy * force * speed;
+            positions[i3 + 2] += dz * force * speed;
+            
+            // Add some spiral effect
+            const spiral = 0.04 * force;
+            const nx = positions[i3];
+            const nz = positions[i3 + 2];
+            const r = Math.sqrt(nx * nx + nz * nz);
+            const angle = Math.atan2(nz, nx) + spiral;
+            positions[i3] = r * Math.cos(angle);
+            positions[i3 + 2] = r * Math.sin(angle);
+            
+            // If too close to center, reset to outside
+            if (dist < 1) {
+              const initRadius = particleData[i3 + 1];
+              const initTheta = particleData[i3 + 2] + Math.random() * 2;
+              const initPhi = (Math.random() - 0.5) * 0.2 + Math.PI / 2;
+              
+              positions[i3] = initRadius * Math.sin(initPhi) * Math.cos(initTheta);
+              positions[i3 + 1] = initRadius * Math.cos(initPhi);
+              positions[i3 + 2] = initRadius * Math.sin(initPhi) * Math.sin(initTheta);
+            }
+            
+            // Update colors based on distance (hotter when closer)
+            const distRatio = dist / 10;
+            colors[i3] = Math.min(1.0, 1.2 - distRatio * 0.5); // Red
+            colors[i3 + 1] = Math.min(1.0, 0.5 - distRatio * 0.3); // Green
+            colors[i3 + 2] = Math.min(1.0, 1.0 - distRatio * 0.5); // Blue
+            
+            // Update size based on distance (larger when closer)
+            sizes[i] = 0.3 + (1.0 / Math.max(1, dist)) * 0.7;
+          }
+          
+          // Update attributes
+          particlesGeometry.attributes.position.needsUpdate = true;
+          particlesGeometry.attributes.size.needsUpdate = true;
+          particlesGeometry.attributes.color.needsUpdate = true;
         }
       });
     };

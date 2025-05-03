@@ -289,7 +289,7 @@ export const generateSampleTasks = (): Task[] => {
   
   // Create at least 5 tasks per month = 60 tasks
   for (let month = 0; month < 12; month++) {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 150; i++) {
       // Create a date within the current month
       const dueDate = new Date(currentYear, month, Math.floor(Math.random() * 28) + 1);
       
