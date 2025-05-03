@@ -1,0 +1,272 @@
+// Cyberpunk Space Todo - Theme Variables
+
+// Generate CSS variables for colors
+@function create-rgb-var($hex) {
+  @return "#{red($hex)}, #{green($hex)}, #{blue($hex)}";
+}
+
+// Color Maps
+$colors-dark: (
+  // Core colors
+  primary: #00F5FF,
+  secondary: #FF3E80,
+  accent: #FFCC00,
+  
+  // Background spectrum
+  background-main: #050718,
+  background-card: #0C1024,
+  background-elevated: #141838,
+  background-inset: #080C1A,
+  
+  // Text colors
+  text-primary: #FFFFFF,
+  text-secondary: #A9B1D6,
+  text-disabled: #565F89,
+  
+  // Priority colors
+  priority-low: #00B2A0,
+  priority-medium: #FFD600,
+  priority-high: #FF7A00,
+  priority-critical: #FF2D55,
+  
+  // Status colors
+  status-success: #00C781,
+  status-warning: #FFAA15,
+  status-error: #FF4040,
+  status-info: #00C8FF,
+);
+
+$colors-light: (
+  // Core colors
+  primary: #0088FF,
+  secondary: #FF4F5E,
+  accent: #FFB900,
+  
+  // Background spectrum
+  background-main: #F0F4FF,
+  background-card: #FFFFFF,
+  background-elevated: #E6EBFF,
+  background-inset: #D8DFEF,
+  
+  // Text colors
+  text-primary: #121438,
+  text-secondary: #495174,
+  text-disabled: #BBC0D9,
+  
+  // Priority colors (same as dark for consistency)
+  priority-low: #00B2A0,
+  priority-medium: #FFD600,
+  priority-high: #FF7A00,
+  priority-critical: #FF2D55,
+  
+  // Status colors (same as dark for consistency)
+  status-success: #00C781,
+  status-warning: #FFAA15,
+  status-error: #FF4040,
+  status-info: #00C8FF,
+);
+
+// Effects
+$effects-dark: (
+  glow-primary: (0 0 10px var(--color-primary), 0 0 20px rgba(var(--color-primary-rgb), 0.5)),
+  glow-secondary: (0 0 10px var(--color-secondary), 0 0 20px rgba(var(--color-secondary-rgb), 0.5)),
+  glow-accent: (0 0 10px var(--color-accent), 0 0 20px rgba(var(--color-accent-rgb), 0.5)),
+  glass-background: rgba(12, 16, 36, 0.7),
+  glass-border: 1px solid rgba(255, 255, 255, 0.1),
+  glass-blur: blur(10px),
+  shadow-normal: 0 4px 6px rgba(0, 0, 0, 0.3),
+  gradient-cosmic: linear-gradient(135deg, #070B34 0%, #141852 100%),
+  gradient-nebula: linear-gradient(135deg, #0C1024 0%, #2B1055 100%),
+  gradient-aurora: linear-gradient(135deg, #091833 0%, #2E3B52 50%, #23778F 100%),
+);
+
+$effects-light: (
+  glow-primary: (0 0 10px var(--color-primary), 0 0 20px rgba(var(--color-primary-rgb), 0.5)),
+  glow-secondary: (0 0 10px var(--color-secondary), 0 0 20px rgba(var(--color-secondary-rgb), 0.5)),
+  glow-accent: (0 0 10px var(--color-accent), 0 0 20px rgba(var(--color-accent-rgb), 0.5)),
+  glass-background: rgba(255, 255, 255, 0.7),
+  glass-border: 1px solid rgba(0, 0, 0, 0.1),
+  glass-blur: blur(10px),
+  shadow-normal: 0 4px 6px rgba(0, 0, 0, 0.1),
+  gradient-cosmic: linear-gradient(135deg, #E6EBFF 0%, #FFFFFF 100%),
+  gradient-nebula: linear-gradient(135deg, #F0F4FF 0%, #E6EBFF 100%),
+  gradient-aurora: linear-gradient(135deg, #F0F4FF 0%, #E6EBFF 50%, #D8DFEF 100%),
+);
+
+// Typography
+$fonts: (
+  primary: ('Orbitron', 'Rajdhani', sans-serif),
+  secondary: ('Rajdhani', 'Exo 2', sans-serif),
+  mono: ('JetBrains Mono', 'Fira Code', monospace),
+);
+
+$font-sizes: (
+  xs: 0.75rem,    // 12px
+  sm: 0.875rem,   // 14px
+  base: 1rem,     // 16px
+  lg: 1.125rem,   // 18px
+  xl: 1.25rem,    // 20px
+  2xl: 1.5rem,    // 24px
+  3xl: 1.875rem,  // 30px
+  4xl: 2.25rem,   // 36px
+);
+
+$font-weights: (
+  light: 300,
+  regular: 400,
+  medium: 500,
+  bold: 700,
+);
+
+$line-heights: (
+  tight: 1.1,
+  snug: 1.25,
+  normal: 1.5,
+  relaxed: 1.75,
+);
+
+// Spacing
+$spacing: (
+  1: 0.25rem,   // 4px
+  2: 0.5rem,    // 8px
+  3: 0.75rem,   // 12px
+  4: 1rem,      // 16px
+  5: 1.5rem,    // 24px
+  6: 2rem,      // 32px
+  8: 3rem,      // 48px
+  10: 4rem,     // 64px
+  12: 6rem,     // 96px
+);
+
+// Borders & Radius
+$radius: (
+  sm: 0.125rem,  // 2px
+  md: 0.25rem,   // 4px
+  lg: 0.5rem,    // 8px
+  xl: 1rem,      // 16px
+  full: 9999px,
+);
+
+$borders: (
+  thin: 1px,
+  regular: 2px,
+  thick: 3px,
+);
+
+// Animation & Transitions
+$animation: (
+  ease-in-out: cubic-bezier(0.4, 0, 0.2, 1),
+  ease-out: cubic-bezier(0, 0, 0.2, 1),
+  ease-in: cubic-bezier(0.4, 0, 1, 1),
+  ease-glitch: cubic-bezier(0.6, -0.28, 0.74, 0.05),
+  duration-fast: 150ms,
+  duration-normal: 300ms,
+  duration-slow: 500ms,
+);
+
+// Z-index scale
+$z-index: (
+  base: 0,
+  above: 10,
+  dropdown: 20,
+  sticky: 30,
+  fixed: 40,
+  modal-backdrop: 50,
+  modal: 60,
+  popover: 70,
+  tooltip: 80,
+);
+
+// Generate CSS variables
+:root {
+  // Colors
+  @each $name, $value in $colors-dark {
+    --color-#{$name}: #{$value};
+    @if type-of($value) == color {
+      --color-#{$name}-rgb: #{create-rgb-var($value)};
+    }
+  }
+
+  // Effects
+  @each $name, $value in $effects-dark {
+    --effect-#{$name}: #{$value};
+  }
+
+  // Typography
+  @each $name, $value in $fonts {
+    --font-#{$name}: #{$value};
+  }
+
+  @each $name, $value in $font-sizes {
+    --text-#{$name}: #{$value};
+  }
+
+  @each $name, $value in $font-weights {
+    --font-#{$name}: #{$value};
+  }
+
+  @each $name, $value in $line-heights {
+    --leading-#{$name}: #{$value};
+  }
+
+  // Spacing
+  @each $name, $value in $spacing {
+    --space-#{$name}: #{$value};
+  }
+
+  // Borders & Radius
+  @each $name, $value in $radius {
+    --radius-#{$name}: #{$value};
+  }
+
+  @each $name, $value in $borders {
+    --border-#{$name}: #{$value};
+  }
+
+  // Animation & Transitions
+  @each $name, $value in $animation {
+    --#{$name}: #{$value};
+  }
+
+  // Transitions
+  --transition-base: all var(--duration-normal) var(--ease-out);
+  --transition-glow: box-shadow var(--duration-normal) var(--ease-out);
+  --transition-transform: transform var(--duration-normal) var(--ease-out);
+  --transition-color: color var(--duration-fast) var(--ease-out);
+
+  // Z-index scale
+  @each $name, $value in $z-index {
+    --z-#{$name}: #{$value};
+  }
+}
+
+// Light theme overrides
+[data-theme="light"] {
+  // Colors
+  @each $name, $value in $colors-light {
+    --color-#{$name}: #{$value};
+    @if type-of($value) == color {
+      --color-#{$name}-rgb: #{create-rgb-var($value)};
+    }
+  }
+
+  // Effects
+  @each $name, $value in $effects-light {
+    --effect-#{$name}: #{$value};
+  }
+}
+
+// Animation class for theme transition
+.theme-transition {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
