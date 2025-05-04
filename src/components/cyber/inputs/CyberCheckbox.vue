@@ -64,7 +64,7 @@ export default defineComponent({
   
   emits: ['update:modelValue', 'change'],
   
-  setup(props, { emit }) {
+  setup(_props, { emit }) {
     const onChange = (event: Event) => {
       const checked = (event.target as HTMLInputElement).checked;
       emit('update:modelValue', checked);

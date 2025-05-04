@@ -8,9 +8,12 @@ declare module 'three' {
     position: Vector3;
     rotation: Euler;
     scale: Vector3;
+    userData: any;
+    children: Object3D[];
     add(object: Object3D): this;
     remove(object: Object3D): this;
     traverse(callback: (object: Object3D) => void): void;
+    constructor();
   }
   
   export class Scene extends Object3D {
@@ -21,13 +24,38 @@ declare module 'three' {
     x: number;
     y: number;
     z: number;
+    constructor(x?: number, y?: number, z?: number);
     set(x: number, y: number, z: number): this;
+    clone(): Vector3;
+    copy(v: Vector3): this;
+    add(v: Vector3): this;
+    addVectors(a: Vector3, b: Vector3): this;
+    subVectors(a: Vector3, b: Vector3): this;
+    sub(v: Vector3): this;
+    multiply(v: Vector3): this;
+    multiplyScalar(s: number): this;
+    divide(v: Vector3): this;
+    divideScalar(s: number): this;
+    lerpVectors(a: Vector3, b: Vector3, t: number): this;
+    lerp(v: Vector3, t: number): this;
+    normalize(): this;
+    length(): number;
+    lengthSq(): number;
+    distanceTo(v: Vector3): number;
+    cross(v: Vector3): this;
+    dot(v: Vector3): number;
   }
   
   export class Euler {
     x: number;
     y: number;
     z: number;
+  }
+  
+  export class Plane {
+    constructor(normal?: Vector3, constant?: number);
+    normal: Vector3;
+    constant: number;
   }
   
   export class Color {
@@ -50,6 +78,8 @@ declare module 'three' {
     opacity: number;
     emissive?: Color;
     emissiveIntensity?: number;
+    side?: Side;
+    alphaTest?: number;
   }
   
   export class MeshStandardMaterial extends Material {
@@ -58,12 +88,32 @@ declare module 'three' {
     emissiveIntensity: number;
     metalness: number;
     roughness: number;
+    flatShading: boolean;
+    constructor(parameters?: {
+      color?: number | string;
+      emissive?: number | string;
+      emissiveIntensity?: number;
+      metalness?: number;
+      roughness?: number;
+      transparent?: boolean;
+      opacity?: number;
+      side?: Side;
+      flatShading?: boolean;
+    });
   }
   
   export class MeshBasicMaterial extends Material {
-    constructor(parameters?: { color?: number | string; transparent?: boolean; opacity?: number; side?: Side });
+    constructor(parameters?: { 
+      color?: number | string; 
+      transparent?: boolean; 
+      opacity?: number; 
+      side?: Side;
+      alphaTest?: number;
+    });
     color: Color;
     side: Side;
+    alphaTest: number;
+    clippingPlanes?: Plane[];
   }
   
   export class PointsMaterial extends Material {
@@ -84,17 +134,31 @@ declare module 'three' {
   }
   
   export class ShaderMaterial extends Material {
-    constructor(parameters?: { uniforms?: { [uniform: string]: { value: any } }; vertexShader?: string; fragmentShader?: string; transparent?: boolean });
+    constructor(parameters?: { 
+      uniforms?: { [uniform: string]: { value: any } }; 
+      vertexShader?: string; 
+      fragmentShader?: string; 
+      transparent?: boolean;
+      side?: Side;
+      blending?: Blending;
+      depthWrite?: boolean;
+    });
     uniforms: { [uniform: string]: { value: any } };
+    side: Side;
+    depthWrite: boolean;
   }
   
   export class BufferGeometry {
+    constructor();
     dispose(): void;
     setAttribute(name: string, attribute: BufferAttribute): BufferGeometry;
+    attributes: { [key: string]: BufferAttribute };
   }
   
   export class BufferAttribute {
     constructor(array: Float32Array, itemSize: number);
+    array: Float32Array;
+    needsUpdate: boolean;
   }
   
   export class Points extends Object3D {
@@ -107,6 +171,7 @@ declare module 'three' {
     material: Material | Material[];
     scale: Vector3;
     rotation: Euler;
+    userData: any;
   }
   
   export class WebGLRenderer {
@@ -119,8 +184,10 @@ declare module 'three' {
   }
   
   export class Raycaster {
+    constructor();
     setFromCamera(coords: Vector2, camera: Camera): void;
     intersectObject(object: Object3D): Array<{ distance: number; point: Vector3; object: Object3D }>;
+    intersectObjects(objects: Object3D[], recursive?: boolean): Array<{ distance: number; point: Vector3; object: Object3D }>;
   }
   
   export class Vector2 {
@@ -139,11 +206,15 @@ declare module 'three' {
     constructor(innerRadius: number, outerRadius: number, thetaSegments?: number, phiSegments?: number, thetaStart?: number, thetaLength?: number);
   }
   
+  export class PlaneGeometry extends BufferGeometry {
+    constructor(width?: number, height?: number, widthSegments?: number, heightSegments?: number);
+  }
+  
   export class SphereGeometry extends BufferGeometry {
     constructor(radius?: number, widthSegments?: number, heightSegments?: number);
   }
   
-  export class OctahedronGeometry extends BufferGeometry {
+  export class IcosahedronGeometry extends BufferGeometry {
     constructor(radius?: number, detail?: number);
   }
   
@@ -155,7 +226,7 @@ declare module 'three' {
     constructor(radius?: number, detail?: number);
   }
   
-  export class IcosahedronGeometry extends BufferGeometry {
+  export class OctahedronGeometry extends BufferGeometry {
     constructor(radius?: number, detail?: number);
   }
   
@@ -193,7 +264,7 @@ declare module 'three' {
 
 // Allow importing threejs submodules
 declare module 'three/examples/jsm/controls/OrbitControls' {
-  import { Camera, Renderer } from 'three';
+  import { Camera, WebGLRenderer, Vector3 } from 'three';
   
   export class OrbitControls {
     constructor(camera: Camera, domElement?: HTMLElement);
@@ -205,8 +276,8 @@ declare module 'three/examples/jsm/controls/OrbitControls' {
     minDistance: number;
     minPolarAngle: number;
     maxPolarAngle: number;
-    // Add solar system orbital view properties
     autoRotate: boolean;
     autoRotateSpeed: number;
+    target: Vector3;
   }
 }

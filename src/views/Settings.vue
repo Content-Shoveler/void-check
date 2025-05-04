@@ -49,7 +49,7 @@
         <div class="setting-group">
           <div class="setting-label">Interface Density</div>
           <div class="setting-control">
-            <CyberRadio
+            <CyberToggleGroup
               v-model="interfaceDensity"
               :options="[
                 { label: 'Compact', value: 'compact' },
@@ -110,6 +110,7 @@
           <div class="setting-control">
             <CyberRadio
               v-model="webglQuality"
+              value="medium"
               :options="[
                 { label: 'Low', value: 'low' },
                 { label: 'Medium', value: 'medium' },
@@ -231,6 +232,7 @@
           <div class="setting-control">
             <CyberRadio
               v-model="defaultPriority"
+              value="medium"
               :options="[
                 { label: 'Low', value: 'low' },
                 { label: 'Medium', value: 'medium' },
@@ -291,6 +293,7 @@
 import { defineComponent, ref, computed, onMounted } from 'vue';
 import { useTasksStore } from '../store/modules/tasks';
 import { useSettingsStore } from '../store/modules/settings';
+import type { ThemeMode, InterfaceDensity, WebGLQuality, TaskPriority } from '../types/components';
 import CyberCard from '../components/cyber/cards/CyberCard.vue';
 import CyberButton from '../components/cyber/buttons/CyberButton.vue';
 import CyberToggle from '../components/cyber/inputs/CyberToggle.vue';
@@ -356,7 +359,7 @@ export default defineComponent({
     
     // Theme Settings Methods
     const updateTheme = (theme: string) => {
-      settingsStore.updateSettings({ theme });
+      settingsStore.updateSettings({ theme: theme as ThemeMode });
       document.documentElement.setAttribute('data-theme', theme);
     };
     
@@ -365,9 +368,9 @@ export default defineComponent({
       settingsStore.updateSettings({ accentColor: color });
     };
     
-    const updateInterfaceDensity = (density: string) => {
-      interfaceDensity.value = density;
-      settingsStore.updateSettings({ interfaceDensity: density });
+  const updateInterfaceDensity = (density: string) => {
+    interfaceDensity.value = density as InterfaceDensity;
+    settingsStore.updateSettings({ interfaceDensity: density as InterfaceDensity });
       
       // Apply density class to root element
       document.documentElement.setAttribute('data-density', density);
@@ -390,8 +393,8 @@ export default defineComponent({
     };
     
     const updateWebglQuality = (quality: string) => {
-      webglQuality.value = quality;
-      settingsStore.updateSettings({ webglQuality: quality });
+      webglQuality.value = quality as WebGLQuality;
+      settingsStore.updateSettings({ webglQuality: quality as WebGLQuality });
     };
     
     const updateParticleDensity = (density: number) => {
@@ -526,11 +529,11 @@ export default defineComponent({
     
     // Task Defaults Methods
     const updateDefaultPriority = (priority: string) => {
-      defaultPriority.value = priority;
+      defaultPriority.value = priority as TaskPriority;
       
       const taskDefaults = {
         ...settingsStore.settings.taskDefaults,
-        priority
+        priority: priority as TaskPriority
       };
       
       settingsStore.updateSettings({ taskDefaults });

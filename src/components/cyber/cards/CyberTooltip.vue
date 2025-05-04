@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
+import { defineComponent, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import type { PropType } from 'vue';
 
 type TooltipPosition = 'top' | 'right' | 'bottom' | 'left';

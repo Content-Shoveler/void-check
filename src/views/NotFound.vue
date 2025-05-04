@@ -39,8 +39,22 @@ export default defineComponent({
   }
   
   .cyber-link {
-    @include cyber-button('primary');
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2) var(--space-4);
+    background: var(--effect-gradient-cosmic);
+    color: var(--color-text-primary);
+    border: var(--border-thin) solid var(--color-primary);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: var(--font-medium);
+    transition: var(--transition-base);
     margin-top: var(--space-4);
+    
+    &:hover {
+      box-shadow: 0 0 10px var(--color-primary), 0 0 20px rgba(var(--color-primary-rgb), 0.5);
+    }
   }
 }
 </style>

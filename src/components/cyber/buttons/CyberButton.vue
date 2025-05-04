@@ -25,7 +25,7 @@
 import { defineComponent } from 'vue';
 import type { PropType } from 'vue';
 
-type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger';
 
 export default defineComponent({
   name: 'CyberButton',
@@ -34,7 +34,7 @@ export default defineComponent({
     variant: {
       type: String as PropType<ButtonVariant>,
       default: 'primary',
-      validator: (value: string) => ['primary', 'secondary', 'accent', 'ghost'].includes(value)
+      validator: (value: string) => ['primary', 'secondary', 'accent', 'ghost', 'danger'].includes(value)
     },
     disabled: {
       type: Boolean,
@@ -111,6 +111,16 @@ export default defineComponent({
     
     &:hover:not(:disabled) {
       background: rgba(var(--color-primary-rgb), 0.1);
+    }
+  }
+  
+  &--danger {
+    background: rgba(var(--color-status-error-rgb), 0.1);
+    color: var(--color-status-error);
+    border: var(--border-thin) solid var(--color-status-error);
+    
+    &:hover:not(:disabled) {
+      box-shadow: 0 0 10px var(--color-status-error), 0 0 20px rgba(var(--color-status-error-rgb), 0.5);
     }
   }
   

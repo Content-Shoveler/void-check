@@ -66,7 +66,7 @@ export default defineComponent({
   emits: ['update:modelValue', 'change'],
   
   setup(props, { emit }) {
-    const onChange = (event: Event) => {
+    const onChange = () => {
       if (props.disabled) return;
       emit('update:modelValue', props.value);
       emit('change', props.value);

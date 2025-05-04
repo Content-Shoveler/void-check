@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import type { PropType } from 'vue';
 

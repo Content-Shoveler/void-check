@@ -46,7 +46,7 @@ export default defineComponent({
   emits: ['click', 'hover', 'dblclick'],
   
   setup(props, { emit }) {
-    const settingsStore = useSettingsStore();
+    const _settingsStore = useSettingsStore();
     const labelRef = ref<HTMLElement | null>(null);
     const mesh = ref<THREE.Mesh | null>(null);
     const taskObjectRef = ref<THREE.Object3D | null>(null);

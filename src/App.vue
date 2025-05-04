@@ -41,8 +41,8 @@ export default defineComponent({
   name: 'App',
   
   setup() {
-    // Initialize the settings store
-    const settingsStore = useSettingsStore()
+    // Initialize the settings store (used for theme settings)
+    const _settingsStore = useSettingsStore()
     
     // Get current year for footer
     const currentYear = computed(() => new Date().getFullYear())

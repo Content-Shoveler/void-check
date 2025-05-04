@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { defineComponent, ref, computed, watch, onBeforeUnmount } from 'vue';
 import type { PropType } from 'vue';
 
 type SliderVariant = 'primary' | 'secondary' | 'accent';
