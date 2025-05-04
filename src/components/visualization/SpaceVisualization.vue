@@ -100,7 +100,9 @@ export default defineComponent({
     CyberToggle
   },
   
-  setup() {
+  emits: ['open-task-details'],
+  
+  setup(_, { emit }) {
     const router = useRouter();
     const tasksStore = useTasksStore();
     const settingsStore = useSettingsStore();
@@ -237,13 +239,14 @@ export default defineComponent({
     // Handle task click
     const handleTaskClick = (taskId: string) => {
       selectedTaskId.value = taskId;
-      handleTaskDoubleClick(taskId); // For single click, we can just open task details
+      handleTaskDoubleClick(taskId); // Focus camera on task
+      // Removed auto-opening of task details modal
     };
     
     // Open task details
     const openTaskDetails = (taskId: string) => {
-      // Navigate to task details or open a modal
-      router.push({ name: 'TaskDetail', params: { id: taskId } });
+      // Emit event to open task details modal
+      emit('open-task-details', taskId);
     };
     
     // Toggle task completion
@@ -314,22 +317,30 @@ export default defineComponent({
         side: THREE.DoubleSide
       });
       
-      // Create rings based on time periods from the unified configuration
-      // We'll create a ring for each time period: hour, day, week, month, quarter, year
-      const timeKeys = Object.keys(timeConfig);
-      timeKeys.forEach((key, index) => {
-        // Use key index as the size parameter for ring positioning
-        const ringPosition = calculateRingPosition(index + 1, timeScale.value);
-        const ringGeometry = new THREE.RingGeometry(...ringPosition);
+      // Create fixed rings with predefined sizes based on timeScale
+      const scaleFactor = timeScale.value + 0.5;
+      const ringSizes = [
+        { inner: 5 * scaleFactor, outer: (5 * scaleFactor) + 0.5 },  // hour
+        { inner: 15 * scaleFactor, outer: (15 * scaleFactor) + 0.5 }, // day
+        { inner: 30 * scaleFactor, outer: (30 * scaleFactor) + 0.5 }, // week
+        { inner: 60 * scaleFactor, outer: (60 * scaleFactor) + 0.5 }, // month 
+        { inner: 110 * scaleFactor, outer: (110 * scaleFactor) + 0.5 }, // quarter
+        { inner: 200 * scaleFactor, outer: (200 * scaleFactor) + 0.5 }  // year
+      ];
+      
+      // Create each ring
+      ringSizes.forEach(size => {
+        // Create geometry with basic parameters
+        const ringGeometry = new THREE.RingGeometry(size.inner, size.outer, 64);
         const ring = new THREE.Mesh(ringGeometry, ringMaterial);
         
-        // Essential: Rotate to be visible from camera perspective
+        // Rotate for proper orientation
         ring.rotation.x = Math.PI / 2;
         
         // Position slightly below the task plane
         ring.position.y = -0.2;
         
-        // Add to our rings array
+        // Add to our tracking array
         rings.value.push(ring);
         
         // Add to scene
@@ -399,6 +410,7 @@ export default defineComponent({
       
       const position = getTaskPosition(taskId);
       rendererRef.value.focusOnPosition(new THREE.Vector3(position.x, position.y, position.z));
+      // Don't open details modal on double-click, just focus camera
     };
     
     // Add keydown handler for spacebar to reset camera

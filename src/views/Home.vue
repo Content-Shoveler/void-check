@@ -10,7 +10,7 @@
     </header> -->
     
     <div class="space-container">
-      <SpaceVisualization ref="visualizationRef" />
+      <SpaceVisualization ref="visualizationRef" @open-task-details="openTaskDetails" />
       
       <!-- <div class="timeline-legend">
         <CyberCard class="legend-card">
@@ -62,6 +62,13 @@
         </CyberCard>
       </div> -->
     </div>
+    <TaskModal
+      :is-open="isTaskModalOpen"
+      :task="currentTask"
+      :is-saving="isSaving"
+      @save="saveTask"
+      @cancel="closeTaskModal"
+    />
   </div>
 </template>
 
@@ -71,16 +78,19 @@ import { useRouter } from 'vue-router';
 import { useTasksStore } from '../store/modules/tasks';
 import { useSettingsStore } from '../store/modules/settings';
 import SpaceVisualization from '../components/visualization/SpaceVisualization.vue';
+import TaskModal from '../components/task/TaskModal.vue';
 import CyberButton from '../components/cyber/buttons/CyberButton.vue';
 import CyberCard from '../components/cyber/cards/CyberCard.vue';
 import CyberBadge from '../components/cyber/cards/CyberBadge.vue';
 import CyberSlider from '../components/cyber/inputs/CyberSlider.vue';
+import type { Task } from '../types';
 
 export default defineComponent({
   name: 'HomeView',
   
   components: {
     SpaceVisualization,
+    TaskModal,
     CyberButton,
     CyberCard,
     CyberBadge,
@@ -96,6 +106,11 @@ export default defineComponent({
     
     // Time scale control (0.1-10)
     const timeScale = ref(settingsStore.settings.defaultTimeScale || 5);
+    
+    // Task modal state
+    const isTaskModalOpen = ref(false);
+    const currentTask = ref<Task | null>(null);
+    const isSaving = ref(false);
     
     // Navigate to tasks view
     const navigateToTasks = () => {
@@ -151,6 +166,40 @@ export default defineComponent({
       }
     });
     
+    // Task modal methods
+    const openTaskDetails = (taskId: string) => {
+      const task = tasksStore.getTaskById(taskId);
+      if (task) {
+        currentTask.value = task;
+        isTaskModalOpen.value = true;
+      }
+    };
+    
+    const closeTaskModal = () => {
+      isTaskModalOpen.value = false;
+      currentTask.value = null;
+    };
+    
+    const saveTask = async (taskData: Partial<Task>) => {
+      isSaving.value = true;
+      
+      try {
+        if (currentTask.value) {
+          // Update existing task
+          await tasksStore.updateTask(currentTask.value.id, taskData);
+        } else {
+          // Create new task
+          await tasksStore.addTask(taskData);
+        }
+        
+        closeTaskModal();
+      } catch (error) {
+        console.error('Failed to save task:', error);
+      } finally {
+        isSaving.value = false;
+      }
+    };
+    
     return {
       visualizationRef,
       timeScale,
@@ -158,7 +207,15 @@ export default defineComponent({
       activeTasks,
       overdueTasks,
       todayTasks,
-      completionRate
+      completionRate,
+      
+      // Task modal state and methods
+      isTaskModalOpen,
+      currentTask,
+      isSaving,
+      openTaskDetails,
+      closeTaskModal,
+      saveTask
     };
   }
 });
