@@ -1,4 +1,5 @@
 // Cyberpunk Space Todo - SCSS Mixins
+@use "sass:map";
 
 // Cyberpunk glow effect
 @mixin cyber-glow($color: "primary", $intensity: "medium") {
@@ -8,7 +9,7 @@
     "high": 0 0 20px
   );
   
-  $glow-value: map-get($intensity-values, $intensity);
+  $glow-value: map.get($intensity-values, $intensity);
   $color-value: var(--color-#{$color});
   $color-rgb: var(--color-#{$color}-rgb);
   

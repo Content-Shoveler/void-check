@@ -1,8 +1,10 @@
 // Cyberpunk Space Todo - Theme Variables
+@use "sass:color";
+@use "sass:meta";
 
 // Generate CSS variables for colors
 @function create-rgb-var($hex) {
-  @return "#{red($hex)}, #{green($hex)}, #{blue($hex)}";
+  @return "#{color.channel($hex, "red", $space: rgb)}, #{color.channel($hex, "green", $space: rgb)}, #{color.channel($hex, "blue", $space: rgb)}";
 }
 
 // Color Maps
@@ -182,7 +184,7 @@ $z-index: (
   // Colors
   @each $name, $value in $colors-dark {
     --color-#{$name}: #{$value};
-    @if type-of($value) == color {
+    @if meta.type-of($value) == color {
       --color-#{$name}-rgb: #{create-rgb-var($value)};
     }
   }
@@ -245,7 +247,7 @@ $z-index: (
   // Colors
   @each $name, $value in $colors-light {
     --color-#{$name}: #{$value};
-    @if type-of($value) == color {
+    @if meta.type-of($value) == color {
       --color-#{$name}-rgb: #{create-rgb-var($value)};
     }
   }

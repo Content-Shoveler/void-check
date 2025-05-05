@@ -1,8 +1,8 @@
 // Cyberpunk Space Todo - Main Styles
 
 // Import variables and mixins
-@import './_variables';
-@import './_mixins';
+@use './_variables' as *;
+@use './_mixins' as *;
 
 // Reset and base styles
 *, *::before, *::after {
@@ -28,7 +28,7 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
   min-height: 100vh;
-  @include custom-scrollbar();
+  // @include custom-scrollbar();
 }
 
 // Typography
@@ -100,7 +100,7 @@ pre {
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
   overflow-x: auto;
-  @include custom-scrollbar(6px);
+  // @include custom-scrollbar(6px);
 }
 
 // Form elements
