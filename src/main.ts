@@ -33,13 +33,8 @@ app.mount('#app')
 const tasksStore = useTasksStore()
 tasksStore.initializeTasks()
 
-// Load sample tasks if database is empty
+// Initialize database (without automatically loading sample data)
 setTimeout(async () => {
   const taskCount = await taskRepository.getAll().then(tasks => tasks.length)
-  if (taskCount === 0) {
-    console.log('No tasks found, loading sample data...')
-    await loadSampleTasks(taskRepository)
-    // Refresh the tasks in the store
-    await tasksStore.fetchAllTasks()
-  }
+  console.log(`Database initialized with ${taskCount} tasks`)
 }, 1000) // Wait for DB initialization

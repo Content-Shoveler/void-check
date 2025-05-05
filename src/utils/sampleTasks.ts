@@ -5,8 +5,9 @@ import type { Reminder, TaskStatus } from '../types/integration';
 
 /**
  * Sample task data for testing that spans the entire year
+ * @param quantity Number of tasks to generate (default: 1800)
  */
-export const generateSampleTasks = (): Task[] => {
+export const generateSampleTasks = (quantity: number = 1800): Task[] => {
   const now = new Date();
   const currentYear = now.getFullYear();
   
@@ -314,9 +315,13 @@ export const generateSampleTasks = (): Task[] => {
   const startOfYear = new Date(currentYear, 0, 1); // January 1st
   const endOfYear = new Date(currentYear, 11, 31); // December 31st
   
-  // Create at least 5 tasks per month = 60 tasks
+  // Calculate tasks per month based on quantity
+  // Reserve ~60 tasks for special tasks (meetings, milestones, etc.)
+  const tasksPerMonth = Math.max(1, Math.floor((quantity - 60) / 12));
+  
+  // Create tasks distributed across months
   for (let month = 0; month < 12; month++) {
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < tasksPerMonth; i++) {
       // Create a date within the current month
       const dueDate = new Date(currentYear, month, Math.floor(Math.random() * 28) + 1);
       
@@ -569,9 +574,11 @@ export const generateSampleTasks = (): Task[] => {
 
 /**
  * Utility to add sample tasks to the database for testing
+ * @param taskRepository The task repository service
+ * @param quantity Number of tasks to generate (default: 100)
  */
-export const loadSampleTasks = async (taskRepository: any): Promise<void> => {
-  const sampleTasks = generateSampleTasks();
+export const loadSampleTasks = async (taskRepository: any, quantity: number = 100): Promise<void> => {
+  const sampleTasks = generateSampleTasks(quantity);
   await taskRepository.bulkAdd(sampleTasks);
   console.log(`Loaded ${sampleTasks.length} sample tasks`);
 };

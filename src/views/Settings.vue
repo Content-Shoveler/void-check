@@ -174,8 +174,16 @@
           <div class="setting-label">Export Data</div>
           <div class="setting-control">
             <CyberButton
+              variant="primary"
               @click="exportData"
             >
+              <template #icon-left>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </template>
               Export to JSON
             </CyberButton>
             <div class="setting-help">
@@ -191,6 +199,13 @@
               variant="secondary"
               @click="triggerImport"
             >
+              <template #icon-left>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </template>
               Import from JSON
             </CyberButton>
             <input
@@ -212,11 +227,62 @@
             <CyberButton
               variant="danger"
               @click="confirmClearData"
+              :loading="clearingData"
             >
+              <template #icon-left>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </template>
               Clear All Data
             </CyberButton>
             <div class="setting-help">
               Delete all tasks and reset settings (cannot be undone)
+            </div>
+          </div>
+        </div>
+      </CyberCard>
+      
+      <!-- Sample Data Section -->
+      <CyberCard class="settings-section">
+        <h2 class="section-title">Sample Data</h2>
+        
+        <div class="setting-group">
+          <div class="setting-label">Number of Tasks</div>
+          <div class="setting-control">
+            <CyberSlider
+              v-model="sampleDataCount"
+              :min="10"
+              :max="2000"
+              :step="10"
+            />
+            <div class="task-count-display">{{ sampleDataCount }} tasks</div>
+            <div class="setting-help">
+              Adjust the number of sample tasks to generate
+            </div>
+          </div>
+        </div>
+        
+        <div class="setting-group">
+          <div class="setting-label">Generate Data</div>
+          <div class="setting-control">
+            <CyberButton
+              variant="accent"
+              @click="generateSampleData"
+              :loading="generatingSampleData"
+            >
+              <template #icon-left>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </template>
+              Generate Sample Data
+            </CyberButton>
+            <div class="setting-help">
+              Create random sample tasks for testing and demonstration
             </div>
           </div>
         </div>
@@ -282,6 +348,7 @@
         <CyberButton
           variant="danger"
           @click="clearAllData"
+          class="confirm-delete-button"
         >
           Confirm Delete
         </CyberButton>
@@ -294,6 +361,8 @@
 import { defineComponent, ref, computed, onMounted } from 'vue';
 import { useTasksStore } from '../store/modules/tasks';
 import { useSettingsStore } from '../store/modules/settings';
+import { loadSampleTasks } from '../utils/sampleTasks';
+import taskRepository from '../services/taskRepository';
 import type { ThemeMode, InterfaceDensity, WebGLQuality, TaskPriority } from '../types/components';
 import CyberCard from '../components/cyber/cards/CyberCard.vue';
 import CyberButton from '../components/cyber/buttons/CyberButton.vue';
@@ -505,30 +574,49 @@ export default defineComponent({
       isConfirmModalOpen.value = true;
     };
     
-    const clearAllData = () => {
-      // Clear tasks
-      tasksStore.clearAllTasks();
+    const clearAllData = async () => {
+      if (clearingData.value) return;
       
-      // Reset settings to defaults
-      settingsStore.resetSettings();
+      clearingData.value = true;
       
-      // Update local refs
-      themeMode.value = 'dark';
-      selectedAccentColor.value = 'cyan';
-      interfaceDensity.value = 'normal';
-      fontSize.value = 1;
-      performanceMode.value = 'standard';
-      webglQuality.value = 'medium';
-      particleDensity.value = 50;
-      animationIntensity.value = 50;
-      defaultPriority.value = 'medium';
-      defaultEffectType.value = 'glow';
-      
-      // Apply settings
-      applySettings();
-      
-      // Close modal
-      isConfirmModalOpen.value = false;
+      try {
+        // 1. Clear all tasks from IndexedDB first
+        await tasksStore.clearAllTasks();
+        
+        // 2. Reload tasks from database to update store state (critical step)
+        await tasksStore.fetchAllTasks();
+        
+        // 3. Reset settings to defaults
+        settingsStore.resetSettings();
+        
+        // 4. Remove settings from localStorage to ensure clean state
+        localStorage.removeItem('voidcheck_settings');
+        
+        // 5. Update local refs to match default values
+        themeMode.value = 'dark';
+        selectedAccentColor.value = 'cyan';
+        interfaceDensity.value = 'normal';
+        fontSize.value = 1;
+        performanceMode.value = 'standard';
+        webglQuality.value = 'medium';
+        particleDensity.value = 50;
+        animationIntensity.value = 50;
+        defaultPriority.value = 'medium';
+        defaultEffectType.value = 'glow';
+        
+        // 6. Apply settings to UI
+        applySettings();
+        
+        // 7. Force a save of the default settings to localStorage
+        localStorage.setItem('voidcheck_settings', JSON.stringify(settingsStore.settings));
+        
+        console.log('All data cleared successfully');
+      } catch (error) {
+        console.error('Failed to clear data:', error);
+      } finally {
+        clearingData.value = false;
+        isConfirmModalOpen.value = false;
+      }
     };
     
     // Task Defaults Methods
@@ -566,6 +654,36 @@ export default defineComponent({
       document.documentElement.style.setProperty('--base-font-size', `${fontSize.value}rem`);
     };
     
+    // Data Management Controls
+    const clearingData = ref(false);
+    
+    // Sample Data Controls
+    const sampleDataCount = ref(100); // Default to 100 tasks
+    const generatingSampleData = ref(false);
+    
+    const generateSampleData = async () => {
+      if (generatingSampleData.value) return;
+      
+      generatingSampleData.value = true;
+      
+      try {
+        // Clear existing tasks first
+        await tasksStore.clearAllTasks();
+        
+        // Generate sample tasks
+        await loadSampleTasks(taskRepository, sampleDataCount.value);
+        
+        // Refresh the tasks in the store
+        await tasksStore.fetchAllTasks();
+        
+        console.log(`Generated ${sampleDataCount.value} sample tasks`);
+      } catch (error) {
+        console.error('Failed to generate sample data:', error);
+      } finally {
+        generatingSampleData.value = false;
+      }
+    };
+    
     // Initialize settings
     onMounted(() => {
       applySettings();
@@ -592,6 +710,14 @@ export default defineComponent({
       defaultPriority,
       defaultEffectType,
       effectTypeOptions,
+      
+      // Data Management
+      clearingData,
+      
+      // Sample Data
+      sampleDataCount,
+      generatingSampleData,
+      generateSampleData,
       
       // Modal State
       isConfirmModalOpen,
@@ -714,6 +840,20 @@ export default defineComponent({
   margin-top: var(--space-2);
   margin-bottom: var(--space-2);
   display: inline-block;
+}
+
+.task-count-display {
+  background-color: var(--color-background-elevated);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+  display: inline-block;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  box-shadow: 0 0 8px rgba(var(--color-accent-rgb), 0.5);
+  text-shadow: 0 0 5px rgba(var(--color-accent-rgb), 0.8);
 }
 
 .hidden-input {
