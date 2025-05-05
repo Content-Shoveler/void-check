@@ -20,23 +20,6 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/tasks/visual',
-    name: 'TaskVisual',
-    component: () => import('../views/TaskVisual.vue'),
-    meta: {
-      title: 'Task Visualization - Cyberpunk Space Todo'
-    }
-  },
-  {
-    path: '/tasks/:id',
-    name: 'TaskDetail',
-    component: () => import('../views/Tasks.vue'),
-    props: true,
-    meta: {
-      title: 'Task Details - Cyberpunk Space Todo'
-    }
-  },
-  {
     path: '/settings',
     name: 'Settings',
     component: () => import('../views/Settings.vue'),
