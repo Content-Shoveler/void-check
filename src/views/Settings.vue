@@ -286,6 +286,28 @@
             </div>
           </div>
         </div>
+        
+        <div class="setting-group">
+          <div class="setting-label">Remove Data</div>
+          <div class="setting-control">
+            <CyberButton
+              variant="danger"
+              @click="removeSampleData"
+              :loading="removingSampleData"
+            >
+              <template #icon-left>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </template>
+              Remove All Sample Data
+            </CyberButton>
+            <div class="setting-help">
+              Clear all tasks without confirmation for quick cleanup
+            </div>
+          </div>
+        </div>
       </CyberCard>
       
       <!-- Task Defaults Section -->
@@ -328,17 +350,14 @@
     
     <!-- Confirmation Modal -->
     <CyberModal
-      :is-open="isConfirmModalOpen"
-      @close="isConfirmModalOpen = false"
+      :model-value="isConfirmModalOpen"
+      @update:model-value="isConfirmModalOpen = $event"
+      title="Confirm Action"
     >
-      <template #title>
-        Confirm Action
-      </template>
-      <template #content>
-        <p>Are you sure you want to clear all data? This action cannot be undone.</p>
-        <p>All tasks and custom settings will be permanently deleted.</p>
-      </template>
-      <template #actions>
+      <p>Are you sure you want to clear all data? This action cannot be undone.</p>
+      <p>All tasks and custom settings will be permanently deleted.</p>
+      
+      <template #footer>
         <CyberButton
           variant="ghost"
           @click="isConfirmModalOpen = false"
@@ -660,6 +679,7 @@ export default defineComponent({
     // Sample Data Controls
     const sampleDataCount = ref(100); // Default to 100 tasks
     const generatingSampleData = ref(false);
+    const removingSampleData = ref(false);
     
     const generateSampleData = async () => {
       if (generatingSampleData.value) return;
@@ -681,6 +701,26 @@ export default defineComponent({
         console.error('Failed to generate sample data:', error);
       } finally {
         generatingSampleData.value = false;
+      }
+    };
+    
+    const removeSampleData = async () => {
+      if (removingSampleData.value) return;
+      
+      removingSampleData.value = true;
+      
+      try {
+        // Clear all tasks directly without confirmation
+        await tasksStore.clearAllTasks();
+        
+        // Refresh the tasks in the store
+        await tasksStore.fetchAllTasks();
+        
+        console.log('All sample data removed successfully');
+      } catch (error) {
+        console.error('Failed to remove sample data:', error);
+      } finally {
+        removingSampleData.value = false;
       }
     };
     
@@ -718,6 +758,8 @@ export default defineComponent({
       sampleDataCount,
       generatingSampleData,
       generateSampleData,
+      removingSampleData,
+      removeSampleData,
       
       // Modal State
       isConfirmModalOpen,
