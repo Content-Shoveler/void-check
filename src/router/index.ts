@@ -45,6 +45,14 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
+    path: '/integrations',
+    name: 'Integrations',
+    component: () => import('../views/Integrations.vue'),
+    meta: {
+      title: 'Calendar Integrations - Cyberpunk Space Todo'
+    }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../views/NotFound.vue'),

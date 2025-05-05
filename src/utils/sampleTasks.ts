@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { Task } from '../types';
+import type { Task, DisplayProperties } from '../types';
+import { createTask } from './taskUtils';
+import type { Reminder, TaskStatus } from '../types/integration';
 
 /**
  * Sample task data for testing that spans the entire year
@@ -209,30 +211,6 @@ export const generateSampleTasks = (): Task[] => {
       };
     }
     
-    // Create task history
-    const history = [
-      {
-        timestamp: createdAt,
-        action: "created"
-      }
-    ];
-    
-    // Add completion action if completed
-    if (completed && completedAt) {
-      history.push({
-        timestamp: completedAt,
-        action: "completed"
-      });
-    }
-    
-    // Add update action if updated
-    if (updatedAt > createdAt && (!completed || updatedAt < completedAt!)) {
-      history.push({
-        timestamp: updatedAt,
-        action: "updated"
-      });
-    }
-    
     // Create task notes
     const noteTemplates = [
       `This ${component} task requires close attention to detail.`,
@@ -256,31 +234,80 @@ export const generateSampleTasks = (): Task[] => {
       `https://docs.example.com/${component.replace(/\s+/g, '-').toLowerCase()}`
     ] : [];
     
-    // Create the task
-    return {
+    // Create reminders
+    const reminderTime = [15, 30, 60, 120, 1440][Math.floor(Math.random() * 5)]; // 15min, 30min, 1hr, 2hrs, or 1 day
+    const reminderEnabled = Math.random() < 0.8; // 80% have notifications enabled
+    
+    const reminders: Reminder[] = [
+      {
+        type: 'notification',
+        minutes: reminderTime,
+        enabled: reminderEnabled,
+        method: 'popup'
+      }
+    ];
+    
+    // Create status object
+    const status: TaskStatus = {
+      completed,
+      completedAt: completedAt || undefined,
+      calendarStatus: 'confirmed'
+    };
+    
+    // Create display properties
+    const display: DisplayProperties = {
+      color,
+      effectType,
+      icon: undefined
+    };
+    
+    // Create history
+    const history = [
+      {
+        timestamp: createdAt,
+        action: "created"
+      }
+    ];
+    
+    // Add completion action if completed
+    if (completed && completedAt) {
+      history.push({
+        timestamp: completedAt,
+        action: "completed"
+      });
+    }
+    
+    // Add update action if updated
+    if (updatedAt > createdAt && (!completed || updatedAt < completedAt!)) {
+      history.push({
+        timestamp: updatedAt,
+        action: "updated"
+      });
+    }
+    
+    // Use our task creation utility
+    return createTask({
       id: uuidv4(),
       title,
       description: `${title} - This task involves working on the ${component} to ensure it meets our quality standards and cyberpunk aesthetic.`,
-      dueDate,
+      endTime: dueDate,
+      startTime: new Date(dueDate.getTime() - 60 * 60 * 1000), // 1 hour before due date
+      isAllDay: false,
       createdAt,
       updatedAt,
-      completedAt,
-      completed,
+      status,
       priority,
+      source: 'internal',
       tags,
-      color,
-      effectType,
+      display,
       isRecurring,
       recurringPattern,
-      notifications: {
-        enabled: Math.random() < 0.8, // 80% have notifications enabled
-        reminderTime: [15, 30, 60, 120, 1440][Math.floor(Math.random() * 5)] // 15min, 30min, 1hr, 2hrs, or 1 day
-      },
+      reminders,
       subtasks,
       notes,
       links,
       history
-    };
+    });
   };
   
   // Generate tasks for the entire year
@@ -319,29 +346,40 @@ export const generateSampleTasks = (): Task[] => {
     meetingDate.setDate(meetingDate.getDate() + (weekDay + 7 - meetingDate.getDay()) % 7);
     meetingDate.setHours(9 + Math.floor(Math.random() * 8), 0, 0); // Between 9am and 5pm
     
-    tasks.push({
+    // Create meeting task with the new format
+    tasks.push(createTask({
       id: uuidv4(),
       title: `${meetingType} sync meeting`,
       description: `Weekly ${meetingType.toLowerCase()} sync to discuss progress, blockers, and next steps`,
-      dueDate: meetingDate,
+      endTime: meetingDate, // Using endTime instead of dueDate
+      startTime: new Date(meetingDate.getTime() - 60 * 60 * 1000), // 1 hour before
+      isAllDay: false,
       createdAt: lastWeek,
       updatedAt: lastWeek,
-      completedAt: null,
-      completed: false,
+      status: { 
+        completed: false,
+        completedAt: undefined,
+        calendarStatus: 'confirmed'
+      },
       priority: "medium",
+      source: 'internal',
       tags: ["meeting", meetingType.toLowerCase()],
-      color: "#7B68EE",
-      effectType: "pulse",
+      display: {
+        color: "#7B68EE",
+        effectType: "pulse"
+      },
       isRecurring: true,
       recurringPattern: {
         frequency: "weekly",
         interval: 1,
         daysOfWeek: [weekDay]
       },
-      notifications: {
+      reminders: [{
+        type: 'notification',
+        minutes: 15,
         enabled: true,
-        reminderTime: 15
-      },
+        method: 'popup'
+      }],
       subtasks: [
         {
           id: uuidv4(),
@@ -362,67 +400,82 @@ export const generateSampleTasks = (): Task[] => {
           action: "created"
         }
       ]
-    });
+    }));
   }
   
   // Add some milestone tasks for each quarter
   for (let quarter = 1; quarter <= 4; quarter++) {
     const month = (quarter - 1) * 3 + 1; // Second month of the quarter (Feb, May, Aug, Nov)
     const milestoneDate = new Date(currentYear, month, 15); // Middle of the month
+    const createdAt = new Date(currentYear, month - 1, 15); // Create a month before
+    const updatedAt = createdAt;
+    const isCompleted = quarter < Math.ceil((now.getMonth() + 1) / 3);
+    const completedAt = isCompleted ? milestoneDate : null;
     
-    tasks.push({
+    // Create task with the new format
+    tasks.push(createTask({
       id: uuidv4(),
       title: `Q${quarter} Planning and Review`,
       description: `Quarter ${quarter} planning, goal setting, and previous quarter review`,
-      dueDate: milestoneDate,
-      createdAt: new Date(currentYear, month - 1, 15), // Create a month before
-      updatedAt: new Date(currentYear, month - 1, 15),
-      completedAt: quarter < Math.ceil((now.getMonth() + 1) / 3) ? milestoneDate : null, // Complete if quarter is in the past
-      completed: quarter < Math.ceil((now.getMonth() + 1) / 3),
+      endTime: milestoneDate,
+      startTime: new Date(milestoneDate.getTime() - 2 * 60 * 60 * 1000), // 2 hours before
+      isAllDay: false,
+      status: {
+        completed: isCompleted,
+        completedAt: completedAt || undefined,
+        calendarStatus: 'confirmed'
+      },
+      createdAt,
+      updatedAt,
       priority: "high",
+      source: 'internal',
       tags: ["planning", "roadmap", "quarterly"],
-      color: "#FFA500",
-      effectType: "hologram",
+      display: {
+        color: "#FFA500",
+        effectType: "hologram"
+      },
       isRecurring: true,
       recurringPattern: {
         frequency: "yearly",
         interval: 1
       },
-      notifications: {
+      reminders: [{
+        type: 'notification',
+        minutes: 1440, // 1 day reminder
         enabled: true,
-        reminderTime: 1440 // 1 day reminder
-      },
+        method: 'popup'
+      }],
       subtasks: [
         {
           id: uuidv4(),
           title: "Prepare quarterly metrics",
-          completed: quarter < Math.ceil((now.getMonth() + 1) / 3)
+          completed: isCompleted
         },
         {
           id: uuidv4(),
           title: "Review goals from previous quarter",
-          completed: quarter < Math.ceil((now.getMonth() + 1) / 3)
+          completed: isCompleted
         },
         {
           id: uuidv4(),
           title: "Draft OKRs for next quarter",
-          completed: quarter < Math.ceil((now.getMonth() + 1) / 3)
+          completed: isCompleted
         },
         {
           id: uuidv4(),
           title: "Prepare presentation",
-          completed: quarter < Math.ceil((now.getMonth() + 1) / 3)
+          completed: isCompleted
         }
       ],
       notes: `This is our quarterly planning session where we review progress and set goals for Q${quarter}.`,
       links: ["https://company-wiki.example.com/quarterly-planning"],
       history: [
         {
-          timestamp: new Date(currentYear, month - 1, 15),
+          timestamp: createdAt,
           action: "created"
         }
       ]
-    });
+    }));
   }
   
   // Add some product release milestones
@@ -432,25 +485,39 @@ export const generateSampleTasks = (): Task[] => {
   for (let i = 0; i < releaseVersions.length; i++) {
     const releaseDate = new Date(currentYear, releaseMonths[i], 20);
     const isPastRelease = releaseDate < now;
+    const createdAt = new Date(currentYear, releaseMonths[i] - 1, 20);
+    const updatedAt = isPastRelease ? releaseDate : createdAt;
+    const completedAt = isPastRelease ? releaseDate : null;
     
-    tasks.push({
+    // Create task with the new format
+    tasks.push(createTask({
       id: uuidv4(),
       title: `Release version ${releaseVersions[i]}`,
       description: `Prepare and deploy product version ${releaseVersions[i]} to production`,
-      dueDate: releaseDate,
-      createdAt: new Date(currentYear, releaseMonths[i] - 1, 20),
-      updatedAt: isPastRelease ? releaseDate : new Date(currentYear, releaseMonths[i] - 1, 20),
-      completedAt: isPastRelease ? releaseDate : null,
-      completed: isPastRelease,
-      priority: "critical",
-      tags: ["release", "deployment", "milestone"],
-      color: "#FF4500",
-      effectType: "glitch",
-      isRecurring: false,
-      notifications: {
-        enabled: true,
-        reminderTime: 60 * 24 // 1 day reminder
+      endTime: releaseDate,
+      startTime: new Date(releaseDate.getTime() - 60 * 60 * 1000), // 1 hour before
+      isAllDay: false,
+      status: {
+        completed: isPastRelease,
+        completedAt: completedAt || undefined,
+        calendarStatus: 'confirmed'
       },
+      createdAt,
+      updatedAt,
+      priority: "critical",
+      source: 'internal',
+      tags: ["release", "deployment", "milestone"],
+      display: {
+        color: "#FF4500",
+        effectType: "glitch"
+      },
+      isRecurring: false,
+      reminders: [{
+        type: 'notification',
+        minutes: 60 * 24, // 1 day reminder
+        enabled: true,
+        method: 'popup'
+      }],
       subtasks: [
         {
           id: uuidv4(),
@@ -490,11 +557,11 @@ export const generateSampleTasks = (): Task[] => {
       ],
       history: [
         {
-          timestamp: new Date(currentYear, releaseMonths[i] - 1, 20),
+          timestamp: createdAt,
           action: "created"
         }
       ]
-    });
+    }));
   }
   
   return tasks;

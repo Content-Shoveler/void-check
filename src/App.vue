@@ -10,6 +10,7 @@
         <nav class="app-nav">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/tasks" class="nav-link">Tasks</router-link>
+          <router-link to="/integrations" class="nav-link">Integrations</router-link>
           <router-link to="/settings" class="nav-link">Settings</router-link>
         </nav>
       </div>

@@ -2,33 +2,46 @@
  * Core types for the Cyberpunk Space Todo application
  */
 
+import type { TaskSource, TaskStatus, RecurrencePattern, Reminder, Attendee } from './integration';
+
+// Visual properties for task display
+export interface DisplayProperties {
+  color: string;
+  effectType: string;
+  icon?: string;
+}
+
 /**
- * Task model with detailed properties
+ * Enhanced Task model with calendar integration support
  */
 export interface Task {
   id: string;
   title: string;
   description: string;
-  dueDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt: Date | null;
-  completed: boolean;
+  
+  // Timing (normalized across calendars)
+  startTime?: Date;        // Start time for calendar events
+  endTime: Date;           // Maps to dueDate in original model
+  isAllDay: boolean;       // Whether the task/event takes all day
+  
+  // Status information 
+  status: TaskStatus;      // Complex status that handles both task and event states
   priority: 'low' | 'medium' | 'high' | 'critical';
+  
+  // Categorization
   tags: string[];
-  color: string;
-  effectType: string;
+  
+  // Integration data
+  source: TaskSource;      // Where this task came from
+  sourceId?: string;       // ID in the original calendar system
+  lastSynced?: Date;       // When last synced with external system
+  
+  // Recurrence and notifications
   isRecurring: boolean;
-  recurringPattern?: {
-    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
-    interval: number;
-    endDate?: Date;
-    daysOfWeek?: number[];
-  };
-  notifications: {
-    enabled: boolean;
-    reminderTime: number; // minutes before due date
-  };
+  recurringPattern?: RecurrencePattern;
+  reminders: Reminder[];
+  
+  // Special fields for VoidCheck-specific features
   subtasks: {
     id: string;
     title: string;
@@ -36,11 +49,58 @@ export interface Task {
   }[];
   notes: string;
   links: string[];
+  
+  // Visual properties
+  display: DisplayProperties;
+  
+  // Provider-specific metadata
+  sourceMetadata?: Record<string, any>;
+  
+  // System fields 
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // History tracking (VoidCheck specific)
   history: {
     timestamp: Date;
     action: string;
     previousState?: Partial<Task>;
   }[];
+  
+  // Location (common in calendar events)
+  location?: string;
+  
+  // Calendar-specific fields
+  attendees?: Attendee[];
+  
+  // Backward compatibility getters/setters for smooth migration
+  /**
+   * @deprecated Use endTime instead
+   */
+  dueDate?: Date;
+  /**
+   * @deprecated Use status.completed instead
+   */
+  completed?: boolean;
+  /**
+   * @deprecated Use status.completedAt instead
+   */
+  completedAt?: Date | null;
+  /**
+   * @deprecated Use display.color instead
+   */
+  color?: string;
+  /**
+   * @deprecated Use display.effectType instead
+   */
+  effectType?: string;
+  /**
+   * @deprecated Use reminders instead
+   */
+  notifications?: {
+    enabled: boolean;
+    reminderTime: number;
+  };
 }
 
 /**

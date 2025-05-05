@@ -81,6 +81,7 @@ export default defineComponent({
       { path: '/', label: 'Home' },
       { path: '/tasks', label: 'Tasks' },
       { path: '/tasks/visual', label: 'Visualize' },
+      { path: '/integrations', label: 'Integrations' },
       { path: '/settings', label: 'Settings' }
     ];
     

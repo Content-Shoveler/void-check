@@ -1,19 +1,24 @@
 import db from './database';
 import type { Task } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { createTask, updateTask, isOverdue, isDueToday } from '../utils/taskUtils';
 
 /**
  * Task Repository Service
  * 
  * Provides methods for interacting with tasks in the database
  * Abstracts the database operations from the store
+ * Supports both legacy and new task formats
  */
 export class TaskRepository {
   /**
    * Get all tasks
    */
   async getAll(): Promise<Task[]> {
-    return await db.tasks.toArray();
+    // Convert stored tasks to normalized format
+    const storedTasks = await db.tasks.toArray();
+    // Tasks are already fully populated, no need to convert them
+    return storedTasks;
   }
 
   /**
@@ -27,7 +32,11 @@ export class TaskRepository {
    * Get tasks by completion status
    */
   async getByCompletionStatus(completed: boolean): Promise<Task[]> {
-    return await db.tasks.filter(task => task.completed === completed).toArray();
+    return await db.tasks.filter(task => {
+      // Handle both legacy and new task model
+      const isCompleted = task.status ? task.status.completed : task.completed;
+      return isCompleted === completed;
+    }).toArray();
   }
 
   /**
@@ -36,7 +45,10 @@ export class TaskRepository {
   async getOverdueTasks(): Promise<Task[]> {
     const now = new Date();
     return await db.tasks
-      .filter(task => !task.completed && new Date(task.dueDate) < now)
+      .filter(task => {
+        // Use utility function for consistency
+        return isOverdue(task);
+      })
       .toArray();
   }
 
@@ -44,15 +56,10 @@ export class TaskRepository {
    * Get tasks due today (due date is today and not completed)
    */
   async getTasksDueToday(): Promise<Task[]> {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     return await db.tasks
       .filter(task => {
-        const dueDate = new Date(task.dueDate);
-        return !task.completed && dueDate >= today && dueDate < tomorrow;
+        // Use utility function for consistency
+        return isDueToday(task);
       })
       .toArray();
   }
@@ -88,37 +95,11 @@ export class TaskRepository {
    * Create a new task
    */
   async create(taskData: Partial<Task>): Promise<Task> {
-    const now = new Date();
-    
-    const newTask: Task = {
-      id: uuidv4(),
-      title: taskData.title || 'New Task',
-      description: taskData.description || '',
-      dueDate: taskData.dueDate || new Date(now.getTime() + 24 * 60 * 60 * 1000), // Default: tomorrow
-      createdAt: now,
-      updatedAt: now,
-      completedAt: null,
-      completed: false,
-      priority: taskData.priority || 'medium',
-      tags: taskData.tags || [],
-      color: taskData.color || '#00F5FF', // Default: cyan
-      effectType: taskData.effectType || 'glow',
-      isRecurring: taskData.isRecurring || false,
-      recurringPattern: taskData.recurringPattern,
-      notifications: taskData.notifications || {
-        enabled: true,
-        reminderTime: 30  // Default: 30 minutes before
-      },
-      subtasks: taskData.subtasks || [],
-      notes: taskData.notes || '',
-      links: taskData.links || [],
-      history: [
-        {
-          timestamp: now,
-          action: 'created'
-        }
-      ]
-    };
+    // Use the utility to create a properly formatted task
+    const newTask = createTask({
+      ...taskData,
+      id: uuidv4() // Ensure we have a new ID
+    });
     
     await db.tasks.add(newTask);
     return newTask;
@@ -141,22 +122,12 @@ export class TaskRepository {
       previousState: { ...task }
     };
     
-    // Update the task
-    const updatedTask = {
-      ...task,
+    // Use the utility to ensure proper task format
+    const updatedTask = updateTask(task, {
       ...updates,
       updatedAt: now,
       history: [...task.history, historyEntry]
-    };
-    
-    // If marking as complete, set completedAt
-    if (updates.completed && !task.completed) {
-      updatedTask.completedAt = now;
-    }
-    // If marking as incomplete, clear completedAt
-    else if (updates.completed === false && task.completed) {
-      updatedTask.completedAt = null;
-    }
+    });
     
     await db.tasks.put(updatedTask);
     return updatedTask;
@@ -183,7 +154,19 @@ export class TaskRepository {
     
     if (!task) return null;
     
-    return await this.update(id, { completed: !task.completed });
+    // Use status.completed for the new model
+    const isCurrentlyCompleted = task.status?.completed !== undefined 
+      ? task.status.completed 
+      : task.completed;
+    
+    return await this.update(id, { 
+      completed: !isCurrentlyCompleted,
+      status: {
+        ...task.status,
+        completed: !isCurrentlyCompleted,
+        completedAt: !isCurrentlyCompleted ? new Date() : undefined
+      }
+    });
   }
 
   /**
@@ -244,6 +227,46 @@ export class TaskRepository {
     }
     
     return newTasks;
+  }
+  
+  /**
+   * Create a task from a calendar event
+   */
+  async createFromCalendarEvent(
+    eventData: any, 
+    source: 'google' | 'microsoft'
+  ): Promise<Task> {
+    // Convert event to task
+    const taskData: Partial<Task> = {
+      title: eventData.title || eventData.summary || 'Calendar Event',
+      description: eventData.description || '',
+      source,
+      sourceId: eventData.id,
+      lastSynced: new Date(),
+      
+      // Location common to calendar events
+      location: eventData.location,
+      
+      // Timing information
+      startTime: eventData.start?.dateTime 
+        ? new Date(eventData.start.dateTime) 
+        : undefined,
+      
+      endTime: eventData.end?.dateTime 
+        ? new Date(eventData.end.dateTime) 
+        : new Date(),
+        
+      isAllDay: eventData.isAllDay || false,
+      
+      // Additional calendar info
+      attendees: eventData.attendees,
+      
+      // Store original event data
+      sourceMetadata: eventData
+    };
+    
+    // Create and store the task
+    return await this.create(taskData);
   }
 }
 
