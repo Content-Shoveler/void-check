@@ -108,9 +108,8 @@
         <div class="setting-group">
           <div class="setting-label">WebGL Quality</div>
           <div class="setting-control">
-            <CyberRadio
+            <CyberRadioGroup
               v-model="webglQuality"
-              value="medium"
               :options="[
                 { label: 'Low', value: 'low' },
                 { label: 'Medium', value: 'medium' },
@@ -230,9 +229,8 @@
         <div class="setting-group">
           <div class="setting-label">Default Priority</div>
           <div class="setting-control">
-            <CyberRadio
+            <CyberRadioGroup
               v-model="defaultPriority"
-              value="medium"
               :options="[
                 { label: 'Low', value: 'low' },
                 { label: 'Medium', value: 'medium' },
@@ -240,6 +238,9 @@
               ]"
               @update:modelValue="updateDefaultPriority"
             />
+            <div class="setting-help">
+              Set the default priority for new tasks
+            </div>
           </div>
         </div>
         
@@ -300,6 +301,7 @@ import CyberToggle from '../components/cyber/inputs/CyberToggle.vue';
 import CyberToggleGroup from '../components/cyber/inputs/CyberToggleGroup.vue';
 import CyberSlider from '../components/cyber/inputs/CyberSlider.vue';
 import CyberRadio from '../components/cyber/inputs/CyberRadio.vue';
+import CyberRadioGroup from '../components/cyber/inputs/CyberRadioGroup.vue';
 import CyberSelect from '../components/cyber/inputs/CyberSelect.vue';
 import CyberModal from '../components/cyber/modals/CyberModal.vue';
 
@@ -310,8 +312,10 @@ export default defineComponent({
     CyberCard,
     CyberButton,
     CyberToggle,
+    CyberToggleGroup,
     CyberSlider,
     CyberRadio,
+    CyberRadioGroup,
     CyberSelect,
     CyberModal
   },
