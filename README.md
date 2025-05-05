@@ -92,6 +92,8 @@ For more detailed information, see:
 - [Implementation Plan](./docs/implementation-plan.md)
 - [Project Brief](./docs/project-brief.md)
 - [Styling & Theming Guide](./docs/styling-theming-guide.md)
+- [Google Calendar Integration Guide](./docs/google-calendar-integration.md)
+- [Microsoft Calendar Integration Guide](./docs/microsoft-calendar-integration.md)
 
 ## License
 
