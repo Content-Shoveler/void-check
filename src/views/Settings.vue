@@ -5,10 +5,9 @@
     </header>
     
     <div class="settings-content">
-      <!-- Theme Settings Section -->
-      <CyberCard class="settings-section">
-        <h2 class="section-title">Theme Settings</h2>
-        
+      <CyberAccordion :multiple="false" :default-expanded="0">
+        <!-- Theme Settings Section -->
+        <CyberAccordionItem class="settings-section" title="Theme Settings" :index="0">        
         <div class="setting-group">
           <div class="setting-label">Theme</div>
           <div class="setting-control">
@@ -82,11 +81,10 @@
             </div>
           </div>
         </div>
-      </CyberCard>
-      
-      <!-- Performance Settings Section -->
-      <CyberCard class="settings-section">
-        <h2 class="section-title">Performance Settings</h2>
+        </CyberAccordionItem>
+        
+        <!-- Performance Settings Section -->
+        <CyberAccordionItem class="settings-section" title="Performance Settings" :index="1">
         
         <div class="setting-group">
           <div class="setting-label">Performance Mode</div>
@@ -164,11 +162,10 @@
             Reset to Default
           </CyberButton>
         </div>
-      </CyberCard>
-      
-      <!-- Data Management Section -->
-      <CyberCard class="settings-section">
-        <h2 class="section-title">Data Management</h2>
+        </CyberAccordionItem>
+        
+        <!-- Data Management Section -->
+        <CyberAccordionItem class="settings-section" title="Data Management" :index="2">
         
         <div class="setting-group">
           <div class="setting-label">Export Data</div>
@@ -242,11 +239,10 @@
             </div>
           </div>
         </div>
-      </CyberCard>
-      
-      <!-- Sample Data Section -->
-      <CyberCard class="settings-section">
-        <h2 class="section-title">Sample Data</h2>
+        </CyberAccordionItem>
+        
+        <!-- Sample Data Section -->
+        <CyberAccordionItem class="settings-section" title="Sample Data" :index="3">
         
         <div class="setting-group">
           <div class="setting-label">Number of Tasks</div>
@@ -308,11 +304,10 @@
             </div>
           </div>
         </div>
-      </CyberCard>
-      
-      <!-- Task Defaults Section -->
-      <CyberCard class="settings-section">
-        <h2 class="section-title">Task Defaults</h2>
+        </CyberAccordionItem>
+        
+        <!-- Task Defaults Section -->
+        <CyberAccordionItem class="settings-section" title="Task Defaults" :index="4">
         
         <div class="setting-group">
           <div class="setting-label">Default Priority</div>
@@ -345,7 +340,8 @@
             </div>
           </div>
         </div>
-      </CyberCard>
+        </CyberAccordionItem>
+      </CyberAccordion>
     </div>
     
     <!-- Confirmation Modal -->
@@ -383,7 +379,6 @@ import { useSettingsStore } from '../store/modules/settings';
 import { loadSampleTasks } from '../utils/sampleTasks';
 import taskRepository from '../services/taskRepository';
 import type { ThemeMode, InterfaceDensity, WebGLQuality, TaskPriority } from '../types/components';
-import CyberCard from '../components/cyber/cards/CyberCard.vue';
 import CyberButton from '../components/cyber/buttons/CyberButton.vue';
 import CyberToggle from '../components/cyber/inputs/CyberToggle.vue';
 import CyberToggleGroup from '../components/cyber/inputs/CyberToggleGroup.vue';
@@ -392,12 +387,13 @@ import CyberRadio from '../components/cyber/inputs/CyberRadio.vue';
 import CyberRadioGroup from '../components/cyber/inputs/CyberRadioGroup.vue';
 import CyberSelect from '../components/cyber/inputs/CyberSelect.vue';
 import CyberModal from '../components/cyber/modals/CyberModal.vue';
+import CyberAccordion from '../components/cyber/accordion/CyberAccordion.vue';
+import CyberAccordionItem from '../components/cyber/accordion/CyberAccordionItem.vue';
 
 export default defineComponent({
   name: 'SettingsView',
   
   components: {
-    CyberCard,
     CyberButton,
     CyberToggle,
     CyberToggleGroup,
@@ -405,7 +401,9 @@ export default defineComponent({
     CyberRadio,
     CyberRadioGroup,
     CyberSelect,
-    CyberModal
+    CyberModal,
+    CyberAccordion,
+    CyberAccordionItem
   },
   
   setup() {
@@ -808,16 +806,7 @@ export default defineComponent({
 }
 
 .settings-section {
-  padding: var(--space-4);
-  
-  .section-title {
-    color: var(--color-primary);
-    font-size: var(--text-xl);
-    margin-top: 0;
-    margin-bottom: var(--space-4);
-    border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.3);
-    padding-bottom: var(--space-2);
-  }
+  width: 100%;
 }
 
 .setting-group {
