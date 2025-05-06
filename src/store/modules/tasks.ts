@@ -17,7 +17,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const error = ref<string | null>(null)
   const activeFilter = ref<string | null>(null)
   const activeSort = ref<{field: string, direction: 'asc' | 'desc'}>({
-    field: 'dueDate',
+    field: 'endTime',
     direction: 'asc'
   })
   const searchQuery = ref('')
@@ -26,17 +26,17 @@ export const useTasksStore = defineStore('tasks', () => {
   const allTasks = computed(() => tasks.value)
   
   const activeTasks = computed(() => 
-    tasks.value.filter(task => !task.completed)
+    tasks.value.filter(task => !task.status.completed)
   )
   
   const completedTasks = computed(() => 
-    tasks.value.filter(task => task.completed)
+    tasks.value.filter(task => task.status.completed)
   )
   
   const overdueTasks = computed(() => {
     const now = new Date()
     return tasks.value.filter(task => 
-      !task.completed && new Date(task.dueDate) < now
+      !task.status.completed && task.endTime < now
     )
   })
 
@@ -47,8 +47,7 @@ export const useTasksStore = defineStore('tasks', () => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     
     return tasks.value.filter(task => {
-      const dueDate = new Date(task.dueDate)
-      return !task.completed && dueDate >= today && dueDate < tomorrow
+      return !task.status.completed && task.endTime >= today && task.endTime < tomorrow
     })
   })
 
@@ -59,8 +58,7 @@ export const useTasksStore = defineStore('tasks', () => {
     endOfWeek.setDate(today.getDate() + (7 - today.getDay()))
     
     return tasks.value.filter(task => {
-      const dueDate = new Date(task.dueDate)
-      return !task.completed && dueDate >= today && dueDate <= endOfWeek
+      return !task.status.completed && task.endTime >= today && task.endTime <= endOfWeek
     })
   })
   
@@ -84,14 +82,14 @@ export const useTasksStore = defineStore('tasks', () => {
     if (activeFilter.value) {
       switch (activeFilter.value) {
         case 'active':
-          result = result.filter(task => !task.completed)
+          result = result.filter(task => !task.status.completed)
           break
         case 'completed':
-          result = result.filter(task => task.completed)
+          result = result.filter(task => task.status.completed)
           break
         case 'overdue':
           const now = new Date()
-          result = result.filter(task => !task.completed && new Date(task.dueDate) < now)
+          result = result.filter(task => !task.status.completed && task.endTime < now)
           break
         case 'today':
           const today = new Date()
@@ -99,8 +97,7 @@ export const useTasksStore = defineStore('tasks', () => {
           const tomorrow = new Date(today)
           tomorrow.setDate(tomorrow.getDate() + 1)
           result = result.filter(task => {
-            const dueDate = new Date(task.dueDate)
-            return !task.completed && dueDate >= today && dueDate < tomorrow
+            return !task.status.completed && task.endTime >= today && task.endTime < tomorrow
           })
           break
         // Add more filters as needed
@@ -115,8 +112,9 @@ export const useTasksStore = defineStore('tasks', () => {
         
         switch (activeSort.value.field) {
           case 'dueDate':
-            aValue = new Date(a.dueDate).getTime()
-            bValue = new Date(b.dueDate).getTime()
+          case 'endTime':
+            aValue = a.endTime.getTime()
+            bValue = b.endTime.getTime()
             break
           case 'priority':
             const priorityOrder: Record<string, number> = { 'low': 0, 'medium': 1, 'high': 2, 'critical': 3 }
@@ -320,7 +318,7 @@ export const useTasksStore = defineStore('tasks', () => {
     
     try {
       await taskRepository.clearCompletedTasks()
-      tasks.value = tasks.value.filter(task => !task.completed)
+      tasks.value = tasks.value.filter(task => !task.status.completed)
     } catch (err) {
       console.error('Failed to clear completed tasks:', err)
       error.value = 'Failed to clear completed tasks. Please try again.'
@@ -393,12 +391,21 @@ export const useTasksStore = defineStore('tasks', () => {
       
       // Process tasks to ensure they have valid Date objects
       const processedTasks = importedTasks.map(task => {
+        // Use default dates if missing
+        const now = new Date();
+        
         return {
           ...task,
-          dueDate: new Date(task.dueDate),
-          createdAt: new Date(task.createdAt),
-          updatedAt: new Date(task.updatedAt),
-          completedAt: task.completedAt ? new Date(task.completedAt) : null
+          // Primary fields (new structure)
+          endTime: task.endTime || now,
+          createdAt: task.createdAt || now,
+          updatedAt: task.updatedAt || now,
+          // Handle nested fields safely
+          status: task.status || { 
+            completed: false,
+            completedAt: undefined,
+            calendarStatus: 'confirmed'
+          }
         }
       })
       

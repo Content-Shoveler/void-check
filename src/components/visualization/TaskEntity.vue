@@ -419,7 +419,7 @@ export default defineComponent({
         taskObject.position.y = props.position.y + Math.sin(time * 0.001 + idHash) * 0.15;
         
         // Optional: Add slight orbital "wobble" for more dynamic feel
-        if (!props.task.completed) {
+        if (!props.task.status.completed) {
           const wobbleAmount = 0.05;
           const wobbleSpeed = 0.0005;
           // Get current orbital position (distance from center)
@@ -546,7 +546,7 @@ export default defineComponent({
           if (child instanceof THREE.Mesh && 
               child.material instanceof THREE.Material && 
               'emissiveIntensity' in child.material) {
-            child.material.emissiveIntensity = isSelected ? 0.8 : (props.task.completed ? 0.2 : 0.4);
+            child.material.emissiveIntensity = isSelected ? 0.8 : (props.task.status.completed ? 0.2 : 0.4);
           }
         });
       }
@@ -554,7 +554,7 @@ export default defineComponent({
     
     // Update material when completion state changes
     watch(
-      () => props.task.completed,
+      () => props.task.status.completed,
       (isCompleted) => {
         if (!taskObjectRef.value) return;
         

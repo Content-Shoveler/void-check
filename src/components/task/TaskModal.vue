@@ -467,7 +467,7 @@ export default defineComponent({
     const populateFormFromTask = () => {
       if (!props.task) return;
       
-      const dueDate = new Date(props.task.dueDate);
+      const dueDate = new Date(props.task.endTime || props.task.dueDate);
       
       form.value = {
         title: props.task.title,
@@ -475,21 +475,21 @@ export default defineComponent({
         dueDateString: formatDateForInput(dueDate),
         dueTimeString: formatTimeForInput(dueDate),
         priority: props.task.priority,
-        tags: [...props.task.tags],
-        color: props.task.color,
-        effectType: props.task.effectType,
-        isRecurring: props.task.isRecurring,
+        tags: [...(props.task.tags || [])],
+        color: props.task.color || '#00F5FF',
+        effectType: props.task.effectType || 'glow',
+        isRecurring: props.task.isRecurring || false,
         recurringPattern: {
           frequency: props.task.recurringPattern?.frequency || 'daily',
           interval: props.task.recurringPattern?.interval || 1,
           daysOfWeek: props.task.recurringPattern?.daysOfWeek || [],
           endDateString: props.task.recurringPattern?.endDate 
-            ? formatDateForInput(new Date(props.task.recurringPattern.endDate)) 
+            ? formatDateForInput(new Date(props.task.recurringPattern.endDate as Date)) 
             : ''
         },
         notifications: {
-          enabled: props.task.notifications.enabled,
-          reminderTime: props.task.notifications.reminderTime
+          enabled: props.task.notifications?.enabled || false,
+          reminderTime: props.task.notifications?.reminderTime || 30
         },
         subtasks: props.task.subtasks.map(subtask => ({ ...subtask })),
         notes: props.task.notes,
@@ -522,9 +522,22 @@ export default defineComponent({
       const task: Partial<Task> = {
         title: form.value.title.trim(),
         description: form.value.description.trim(),
-        dueDate,
+        // Use endTime instead of dueDate (with dueDate as compatibility field)
+        endTime: dueDate,
+        dueDate: dueDate,
         priority: form.value.priority,
         tags: form.value.tags,
+        // Create proper status object
+        status: {
+          completed: false, // New tasks are not completed
+          completedAt: undefined
+        },
+        // Create proper display object
+        display: {
+          color: form.value.color,
+          effectType: form.value.effectType
+        },
+        // Keep compatibility fields
         color: form.value.color,
         effectType: form.value.effectType,
         isRecurring: form.value.isRecurring,
@@ -532,9 +545,19 @@ export default defineComponent({
           enabled: form.value.notifications.enabled,
           reminderTime: form.value.notifications.reminderTime
         },
+        // Create proper reminders array
+        reminders: [{
+          type: 'notification',
+          minutes: form.value.notifications.reminderTime,
+          enabled: form.value.notifications.enabled,
+          method: 'popup'
+        }],
         subtasks: form.value.subtasks,
         notes: form.value.notes,
-        links: form.value.links
+        links: form.value.links,
+        // Add default fields needed by task structure
+        isAllDay: false,
+        source: 'internal'
       };
       
       if (form.value.isRecurring) {

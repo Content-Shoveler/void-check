@@ -36,7 +36,7 @@
     <div v-if="selectedTask" class="task-details">
       <cyber-card>
         <h5>{{ selectedTask.title }}</h5>
-        <h5 class="due-date">{{ formatDate(selectedTask.dueDate) }}</h5>
+        <h5 class="due-date">{{ formatDate(selectedTask.endTime) }}</h5>
         <p v-if="selectedTask.description">{{ selectedTask.description }}</p>
         <!-- <div class="task-meta">
           <cyber-badge :type="selectedTask.priority">{{ selectedTask.priority }}</cyber-badge>
@@ -45,8 +45,8 @@
           <cyber-button size="small" @click="openTaskDetails(selectedTask.id)">
             View Details
           </cyber-button>
-          <!-- <cyber-button size="small" type="secondary" @click="toggleTaskCompletion(selectedTask)" :disabled="selectedTask.completed">
-            {{ selectedTask.completed ? 'Completed' : 'Mark Complete' }}
+          <!-- <cyber-button size="small" type="secondary" @click="toggleTaskCompletion(selectedTask)" :disabled="selectedTask.status.completed">
+            {{ selectedTask.status.completed ? 'Completed' : 'Mark Complete' }}
           </cyber-button> -->
         </div>
       </cyber-card>
@@ -157,7 +157,7 @@ export default defineComponent({
     
     // Active tasks (not completed)
     const activeTasks = computed(() => {
-      return tasksStore.tasks.filter(task => !task.completed);
+      return tasksStore.tasks.filter(task => !task.status.completed);
     });
     
     // Recently completed tasks (completed in the last day)
@@ -166,9 +166,9 @@ export default defineComponent({
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
       
       return tasksStore.tasks.filter(task => {
-        return task.completed && 
-               task.completedAt && 
-               new Date(task.completedAt) >= oneDayAgo;
+        return task.status.completed && 
+               task.status.completedAt && 
+               new Date(task.status.completedAt) >= oneDayAgo;
       });
     });
     
@@ -176,8 +176,7 @@ export default defineComponent({
     const tasksToShow = computed(() => {
       const futureTasks = activeTasks.value.filter(task => {
         const referenceTime = isLiveMode.value ? new Date() : customNowTime.value;
-        const dueDate = new Date(task.dueDate);
-        return dueDate > referenceTime;
+        return task.endTime > referenceTime;
       });
       return [...futureTasks, ...recentlyCompletedTasks.value];
     });
@@ -251,7 +250,7 @@ export default defineComponent({
     
     // Toggle task completion
     const toggleTaskCompletion = (task: Task) => {
-      if (!task.completed) {
+      if (!task.status.completed) {
         tasksStore.toggleTaskCompletion(task.id);
       }
     };

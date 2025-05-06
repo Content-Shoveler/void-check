@@ -1,10 +1,10 @@
 <template>
-  <div class="task-list-item" :class="{ 'task-list-item--completed': task.completed }">
+  <div class="task-list-item" :class="{ 'task-list-item--completed': task.status.completed }">
     <div class="task-list-item__checkbox">
       <CyberCheckbox 
-        :modelValue="task.completed" 
+        :modelValue="task.status.completed" 
         @update:modelValue="onToggleComplete" 
-        :aria-label="task.completed ? 'Mark as incomplete' : 'Mark as complete'"
+        :aria-label="task.status.completed ? 'Mark as incomplete' : 'Mark as complete'"
       />
     </div>
     
@@ -95,7 +95,7 @@ export default defineComponent({
   setup(props, { emit }) {
     // Format the due date nicely
     const formattedDueDate = computed(() => {
-      const dueDate = new Date(props.task.dueDate);
+      const dueDate = props.task.endTime;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -134,10 +134,10 @@ export default defineComponent({
     
     // Determine the color class for the due date
     const dueDateClass = computed(() => {
-      const dueDate = new Date(props.task.dueDate);
+      const dueDate = props.task.endTime;
       const now = new Date();
       
-      if (props.task.completed) return 'task-list-item__date--completed';
+      if (props.task.status.completed) return 'task-list-item__date--completed';
       if (dueDate < now) return 'task-list-item__date--overdue';
       
       const today = new Date();

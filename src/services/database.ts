@@ -1,4 +1,3 @@
-
 import Dexie from 'dexie';
 import type { Table } from 'dexie';
 import type { Task } from '../types';
@@ -17,9 +16,9 @@ export class VoidCheckDB extends Dexie {
     
     // Define database schema with indexes for efficient querying
     this.version(1).stores({
-      tasks: 'id, completed, dueDate, priority, *tags, createdAt, updatedAt'
+      tasks: 'id, [status.completed], endTime, priority, *tags, createdAt, updatedAt'
       // id is the primary key
-      // completed, dueDate, priority are indexed for filtering
+      // status.completed, endTime, priority are indexed for filtering
       // tags is a multi-entry index for tag filtering
       // createdAt, updatedAt are indexed for sorting
     });
@@ -33,8 +32,6 @@ export class VoidCheckDB extends Dexie {
       // Check if the database has already been initialized
       const taskCount = await this.tasks.count();
       console.log(`Database initialized with ${taskCount} tasks`);
-      
-      // If we want to add sample data on first run, we could do it here
     } catch (error) {
       console.error('Failed to initialize database:', error);
       throw error;

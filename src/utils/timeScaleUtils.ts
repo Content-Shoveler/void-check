@@ -112,7 +112,7 @@ export function calculateRingPosition(size: number, timeScale: number, reference
  */
 export function calculateTaskPosition(task: Task, timeScale: number, referenceTime?: Date): TaskPosition {
   const now = referenceTime || new Date();
-  const dueDate = new Date(task.dueDate);
+  const dueDate = new Date(task.endTime);
   const timeDifference = dueDate.getTime() - now.getTime();
 
   let orbitRadius = 0;

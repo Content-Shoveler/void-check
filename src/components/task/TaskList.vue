@@ -146,8 +146,8 @@ export default defineComponent({
     const overdueTasks = computed(() => {
       const now = new Date();
       return props.tasks.filter(task => 
-        !task.completed && new Date(task.dueDate) < now
-      ).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        !task.status.completed && task.endTime < now
+      ).sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
     });
 
     const todayTasks = computed(() => {
@@ -157,9 +157,8 @@ export default defineComponent({
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       return props.tasks.filter(task => {
-        const dueDate = new Date(task.dueDate);
-        return !task.completed && dueDate >= today && dueDate < tomorrow;
-      }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        return !task.status.completed && task.endTime >= today && task.endTime < tomorrow;
+      }).sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
     });
 
     const upcomingTasks = computed(() => {
@@ -169,16 +168,15 @@ export default defineComponent({
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       return props.tasks.filter(task => {
-        const dueDate = new Date(task.dueDate);
-        return !task.completed && dueDate >= tomorrow;
-      }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        return !task.status.completed && task.endTime >= tomorrow;
+      }).sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
     });
 
     const completedTasks = computed(() => 
-      props.tasks.filter(task => task.completed)
+      props.tasks.filter(task => task.status.completed)
         .sort((a, b) => {
-          const aDate = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-          const bDate = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          const aDate = a.status.completedAt ? new Date(a.status.completedAt).getTime() : 0;
+          const bDate = b.status.completedAt ? new Date(b.status.completedAt).getTime() : 0;
           return bDate - aDate; // Most recently completed first
         })
     );

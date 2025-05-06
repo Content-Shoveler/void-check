@@ -130,13 +130,13 @@ export default defineComponent({
     const isSaving = ref(false);
     const searchQuery = ref('');
     const activeFilter = ref<string | null>(null);
-    const sortField = ref('dueDate');
+    const sortField = ref('endTime');
     const sortDirection = ref<'asc' | 'desc'>('asc');
     const isLoading = computed(() => tasksStore.isLoading);
     
     // Sort options
     const sortOptions = [
-      { value: 'dueDate', label: 'Due Date' },
+      { value: 'endTime', label: 'Due Date' },
       { value: 'createdAt', label: 'Created Date' },
       { value: 'title', label: 'Title' },
       { value: 'priority', label: 'Priority' }

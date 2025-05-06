@@ -12,7 +12,7 @@ export interface DisplayProperties {
 }
 
 /**
- * Enhanced Task model with calendar integration support
+ * Task model with calendar integration support
  */
 export interface Task {
   id: string;
@@ -21,7 +21,7 @@ export interface Task {
   
   // Timing (normalized across calendars)
   startTime?: Date;        // Start time for calendar events
-  endTime: Date;           // Maps to dueDate in original model
+  endTime: Date;           // When the task is due / event ends
   isAllDay: boolean;       // Whether the task/event takes all day
   
   // Status information 
@@ -73,34 +73,17 @@ export interface Task {
   // Calendar-specific fields
   attendees?: Attendee[];
   
-  // Backward compatibility getters/setters for smooth migration
-  /**
-   * @deprecated Use endTime instead
-   */
-  dueDate?: Date;
-  /**
-   * @deprecated Use status.completed instead
-   */
-  completed?: boolean;
-  /**
-   * @deprecated Use status.completedAt instead
-   */
-  completedAt?: Date | null;
-  /**
-   * @deprecated Use display.color instead
-   */
-  color?: string;
-  /**
-   * @deprecated Use display.effectType instead
-   */
-  effectType?: string;
-  /**
-   * @deprecated Use reminders instead
-   */
+  // Temporary compatibility fields - to be removed in future versions
+  // These are included only for compatibility with existing code
+  dueDate?: Date;          // Maps to endTime
+  completed?: boolean;     // Maps to status.completed
+  completedAt?: Date | null; // Maps to status.completedAt
+  color?: string;          // Maps to display.color
+  effectType?: string;     // Maps to display.effectType
   notifications?: {
     enabled: boolean;
     reminderTime: number;
-  };
+  };                      // Maps to reminders
 }
 
 /**
