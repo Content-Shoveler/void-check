@@ -59,15 +59,15 @@ export class IntegrationService {
   private registerDefaultAdapters(): void {
     // Register Google Calendar adapter
     this.registerAdapter(new GoogleCalendarAdapter({
-      clientId: 'mock-google-client-id',
-      apiKey: 'mock-google-api-key'
+      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'mock-google-client-id',
+      apiKey: import.meta.env.VITE_GOOGLE_API_KEY || 'mock-google-api-key'
     }));
     
     // Register Microsoft Calendar adapter
     this.registerAdapter(new MicrosoftCalendarAdapter({
-      clientId: 'mock-microsoft-client-id',
-      clientSecret: 'mock-microsoft-client-secret',
-      redirectUri: 'http://localhost:3000/auth/microsoft/callback'
+      clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || 'mock-microsoft-client-id',
+      clientSecret: import.meta.env.VITE_MICROSOFT_CLIENT_SECRET || 'mock-microsoft-client-secret',
+      redirectUri: import.meta.env.VITE_MICROSOFT_REDIRECT_URI || 'http://localhost:3000/auth/microsoft/callback'
     }));
   }
   
